@@ -21,7 +21,8 @@ other_language_protoc_outputs =                                \
   com/google/protobuf/conformance/Conformance.java             \
   conformance_pb2.py                                           \
   Conformance.pbobjc.h                                         \
-  Conformance.pbobjc.m
+  Conformance.pbobjc.m                                         \
+  conformance.d
 
 bin_PROGRAMS = conformance-test-runner conformance-cpp
 
@@ -86,7 +87,7 @@ if USE_EXTERNAL_PROTOC
 
 # Some implementations include pre-generated versions of well-known types.
 protoc_middleman: $(conformance_protoc_inputs) $(well_known_type_protoc_inputs)
-	$(PROTOC) -I$(srcdir) -I$(top_srcdir) --cpp_out=. --java_out=. --ruby_out=. --objc_out=. --python_out=. $(conformance_protoc_inputs)
+	$(PROTOC) -I$(srcdir) -I$(top_srcdir) --cpp_out=. --java_out=. --ruby_out=. --objc_out=. --python_out=. --d_out=. $(conformance_protoc_inputs)
 	$(PROTOC) -I$(srcdir) -I$(top_srcdir) --cpp_out=. --java_out=. --ruby_out=. --python_out=. $(well_known_type_protoc_inputs)
 	touch protoc_middleman
 
@@ -96,7 +97,7 @@ else
 # relative to srcdir, which may not be the same as the current directory when
 # building out-of-tree.
 protoc_middleman: $(top_srcdir)/src/protoc$(EXEEXT) $(conformance_protoc_inputs) $(well_known_type_protoc_inputs)
-	oldpwd=`pwd` && ( cd $(srcdir) && $$oldpwd/../src/protoc$(EXEEXT) -I. -I$(top_srcdir)/src --cpp_out=$$oldpwd --java_out=$$oldpwd --ruby_out=$$oldpwd --objc_out=$$oldpwd --python_out=$$oldpwd $(conformance_protoc_inputs) )
+	oldpwd=`pwd` && ( cd $(srcdir) && $$oldpwd/../src/protoc$(EXEEXT) -I. -I$(top_srcdir)/src --cpp_out=$$oldpwd --java_out=$$oldpwd --ruby_out=$$oldpwd --objc_out=$$oldpwd --python_out=$$oldpwd --d_out=$$oldpwd $(conformance_protoc_inputs) )
 	oldpwd=`pwd` && ( cd $(srcdir) && $$oldpwd/../src/protoc$(EXEEXT) -I. -I$(top_srcdir)/src --cpp_out=$$oldpwd --java_out=$$oldpwd --ruby_out=$$oldpwd --python_out=$$oldpwd $(well_known_type_protoc_inputs) )
 	touch protoc_middleman
 
@@ -108,7 +109,7 @@ $(other_language_protoc_outputs): protoc_middleman
 
 BUILT_SOURCES = $(protoc_outputs) $(other_language_protoc_outputs)
 
-CLEANFILES = $(protoc_outputs) protoc_middleman javac_middleman conformance-java conformance-csharp $(other_language_protoc_outputs)
+CLEANFILES = $(protoc_outputs) protoc_middleman javac_middleman conformance-java conformance-csharp $(other_language_protoc_outputs) conformance-d
 
 MAINTAINERCLEANFILES =   \
   Makefile.in
@@ -131,6 +132,11 @@ conformance-csharp: $(other_language_protoc_outputs)
 	@echo '#! /bin/sh' > conformance-csharp
 	@echo 'mono ../csharp/src/Google.Protobuf.Conformance/bin/Release/Google.Protobuf.Conformance.exe "$$@"' >> conformance-csharp
 	@chmod +x conformance-csharp
+
+conformance-d: $(other_language_protoc_outputs)
+	@echo '#! /bin/sh' > conformance-d
+	@echo 'rdmd -I../d/src -I.. conformance_d.d conformance.d' >> conformance-d
+	@chmod +x conformance-d
 
 # Targets for actually running tests.
 test_cpp: protoc_middleman conformance-test-runner conformance-cpp
@@ -159,3 +165,6 @@ test_objc: protoc_middleman conformance-test-runner conformance-objc
 	./conformance-test-runner --failure_list failure_list_objc.txt ./conformance-objc
 
 endif
+
+test_d: protoc_middleman conformance-test-runner conformance-d
+	./conformance-test-runner --failure_list failure_list_d.txt ./conformance-d

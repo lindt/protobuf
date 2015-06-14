@@ -164,7 +164,8 @@ nobase_include_HEADERS =                                        \
   google/protobuf/util/json_util.h                              \
   google/protobuf/util/time_util.h                              \
   google/protobuf/util/type_resolver_util.h                     \
-  google/protobuf/util/message_differencer.h
+  google/protobuf/util/message_differencer.h                    \
+  google/protobuf/compiler/d/d_generator.h
 
 lib_LTLIBRARIES = libprotobuf-lite.la libprotobuf.la libprotoc.la
 
@@ -468,7 +469,10 @@ libprotoc_la_SOURCES =                                         \
   google/protobuf/compiler/csharp/csharp_source_generator_base.cc \
   google/protobuf/compiler/csharp/csharp_source_generator_base.h \
   google/protobuf/compiler/csharp/csharp_wrapper_field.cc      \
-  google/protobuf/compiler/csharp/csharp_wrapper_field.h
+  google/protobuf/compiler/csharp/csharp_wrapper_field.h       \
+  google/protobuf/compiler/d/d_generator.cc                    \
+  google/protobuf/compiler/d/d_helpers.cc                      \
+  google/protobuf/compiler/d/d_helpers.h
 
 bin_PROGRAMS = protoc
 protoc_LDADD = $(PTHREAD_LIBS) libprotobuf.la libprotoc.la
@@ -748,6 +752,7 @@ protobuf_test_SOURCES =                                        \
   google/protobuf/util/message_differencer_unittest.cc         \
   google/protobuf/util/time_util_test.cc                       \
   google/protobuf/util/type_resolver_util_test.cc              \
+  google/protobuf/compiler/d/d_generator_unittest.cc           \
   $(COMMON_TEST_SOURCES)
 
 

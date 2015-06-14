@@ -103,9 +103,11 @@ conformance/.libs/
 conformance/com/
 conformance/conformance-cpp
 conformance/conformance-csharp
+conformance/conformance-d
 conformance/conformance-java
 conformance/conformance-objc
 conformance/conformance-test-runner
+conformance/conformance.d
 conformance/conformance.pb.cc
 conformance/conformance.pb.h
 conformance/Conformance.pbobjc.h

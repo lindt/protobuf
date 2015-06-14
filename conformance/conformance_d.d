@@ -1,0 +1,90 @@
+import std.array;
+import std.exception;
+import std.stdio;
+import google.protobuf;
+import conformance.conformance;
+
+void doTest(ConformanceRequest request, ConformanceResponse response)
+{
+    TestAllTypes testMessage;
+
+    final switch (request.payloadCase)
+    {
+    case ConformanceRequest.PayloadCase.caseProtobufPayload:
+        try
+        {
+            auto payload = request.protobufPayload.save;
+            testMessage = payload.fromProtobuf!TestAllTypes;
+        }
+        catch (ProtobufException decodeException)
+        {
+            response.parseError = decodeException.msg;
+            return;
+        }
+        break;
+    case ConformanceRequest.PayloadCase.caseJsonPayload:
+        response.skipped = "JSON not supported";
+        return;
+    case ConformanceRequest.PayloadCase.casePayloadNotSet:
+        response.runtimeError = "Request didn't have payload.";
+        return;
+    }
+
+    final switch (request.requestedOutputFormat)
+    {
+    case WireFormat.UNSPECIFIED:
+        response.runtimeError = "Unspecified output format";
+        return;
+    case WireFormat.PROTOBUF:
+        response.protobufPayload = testMessage.toProtobuf.array;
+        break;
+    case WireFormat.JSON:
+        response.skipped = "JSON not supported";
+        return;
+    }
+}
+
+bool doTestIo()
+{
+    static ubyte[4] lengthBuffer;
+    ubyte[] lengthData;
+    size_t length;
+    static ubyte[] testBuffer;
+    ubyte[] testData;
+
+    lengthData = stdin.rawRead(lengthBuffer[]);
+    if (lengthData.length == 0)
+        return false;
+
+    enforce(lengthData.length == 4, "Truncate test length");
+    length = *cast(uint*) lengthData.ptr;
+
+    if (testBuffer.length < length)
+        testBuffer.length = length;
+
+    testData = stdin.rawRead(testBuffer[0 .. length]);
+    enforce(testData.length == length, "Truncated test");
+
+    auto request = testData.fromProtobuf!ConformanceRequest;
+    auto response = new ConformanceResponse;
+
+    doTest(request, response);
+
+    auto encodedResult = toProtobuf(response);
+    enforce(encodedResult.length < (1L << 32));
+    *cast(uint*) lengthBuffer.ptr = cast(uint) encodedResult.length;
+
+    stdout.rawWrite(lengthBuffer);
+    stdout.rawWrite(encodedResult.array);
+    stdout.flush;
+
+    return true;
+}
+
+void main()
+{
+    while (doTestIo)
+    {
+        ;
+    }
+}

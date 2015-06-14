@@ -117,6 +117,7 @@ set(tests_files
   ${protobuf_source_dir}/src/google/protobuf/compiler/cpp/cpp_plugin_unittest.cc
   ${protobuf_source_dir}/src/google/protobuf/compiler/cpp/cpp_unittest.cc
   ${protobuf_source_dir}/src/google/protobuf/compiler/csharp/csharp_generator_unittest.cc
+  ${protobuf_source_dir}/src/google/protobuf/compiler/d/d_generator_unittest.cc
   ${protobuf_source_dir}/src/google/protobuf/compiler/importer_unittest.cc
   ${protobuf_source_dir}/src/google/protobuf/compiler/java/java_doc_comment_unittest.cc
   ${protobuf_source_dir}/src/google/protobuf/compiler/java/java_plugin_unittest.cc
