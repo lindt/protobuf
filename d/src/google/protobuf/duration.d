@@ -17,6 +17,8 @@ struct Duration
 
     auto toProtobuf()
     {
+        validateRange;
+
         auto splitedDuration = duration.split!("seconds", "nsecs");
         auto protobufMessage = ProtobufMessage(splitedDuration.seconds, cast(int) splitedDuration.nsecs);
 
@@ -31,6 +33,42 @@ struct Duration
         duration = dur!"seconds"(protobufMessage.seconds) + dur!"nsecs"(protobufMessage.nanos);
 
         return this;
+    }
+
+    auto toJSONValue()
+    {
+        import std.format : format;
+        import google.protobuf.json_encoding;
+
+        validateRange;
+
+        auto splitedDuration = duration.split!("seconds", "nsecs");
+        bool negative = splitedDuration.seconds < 0 || splitedDuration.nsecs < 0;
+        auto seconds = splitedDuration.seconds >= 0 ? splitedDuration.seconds : -splitedDuration.seconds;
+        auto fractionalDigits = splitedDuration.nsecs >= 0 ? splitedDuration.nsecs : -splitedDuration.nsecs;
+        auto fractionalLength = 9;
+
+        foreach (i; 0 .. 3)
+        {
+            if (fractionalDigits % 1000 != 0)
+                break;
+            fractionalDigits /= 1000;
+            fractionalLength -= 3;
+        }
+
+        if (fractionalDigits)
+            return "%s%d.%0*ds".format(negative ? "-" : "", seconds, fractionalLength, fractionalDigits).toJSONValue;
+        else
+            return "%s%ds".format(negative ? "-" : "", seconds).toJSONValue;
+    }
+
+    private void validateRange()
+    {
+        import std.exception : enforce;
+
+        auto seconds = duration.total!"seconds";
+        enforce!ProtobufException(-315_576_000_001L < seconds && seconds < 315_576_000_001,
+            "Duration is out of range approximately +-10_000 years.");
     }
 }
 
@@ -61,4 +99,22 @@ unittest
     buffer = Duration(StdDuration.zero).toProtobuf.array;
     assert(buffer.empty);
     assert(buffer.fromProtobuf!Duration == Duration.zero);
+}
+
+unittest
+{
+    import std.datetime : msecs, nsecs, seconds, weeks;
+    import std.exception : assertThrown;
+    import std.json : JSONValue;
+
+    assert(Duration(0.seconds).toJSONValue == JSONValue("0s"));
+    assert(Duration(1.seconds).toJSONValue == JSONValue("1s"));
+    assert(Duration((-1).seconds).toJSONValue == JSONValue("-1s"));
+    assert(Duration(0.seconds + 50.msecs).toJSONValue == JSONValue("0.050s"));
+    assert(Duration(0.seconds - 50.msecs).toJSONValue == JSONValue("-0.050s"));
+    assert(Duration(0.seconds - 300.nsecs).toJSONValue == JSONValue("-0.000000300s"));
+    assert(Duration(-100.seconds - 300.nsecs).toJSONValue == JSONValue("-100.000000300s"));
+
+    assertThrown!ProtobufException(Duration(530_000.weeks).toJSONValue);
+    assertThrown!ProtobufException(Duration(-530_000.weeks).toJSONValue);
 }

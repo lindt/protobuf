@@ -3,8 +3,8 @@ module google.protobuf;
 import std.algorithm : map;
 import std.exception : enforce;
 import std.range : chain, dropExactly, ElementType, empty, hasLength, InputRange, InputRangeObject, isInputRange, take;
-import std.traits : isAggregateType, isArray, isAssociativeArray, isFloatingPoint, isIntegral, KeyType, ReturnType,
-    ValueType;
+import std.traits : isAggregateType, isArray, isAssociativeArray, isBoolean, isFloatingPoint, isIntegral, KeyType,
+    ReturnType, ValueType;
 import std.typecons : Flag, No, Yes;
 
 alias bytes = ubyte[];
@@ -205,7 +205,7 @@ unittest
 }
 
 auto toProtobuf(Proto proto = Proto(1), T)(T value)
-if (is(T == bool) || isIntegral!T || isFloatingPoint!T)
+if (isBoolean!T || isIntegral!T || isFloatingPoint!T)
 {
     validateProto!(proto, T);
 
@@ -405,7 +405,8 @@ if (isAssociativeArray!T && isAggregateType!(ValueType!T))
         .sizedRangeObject;
 }
 
-SizedRange!ubyte toProtobufTagged(Proto proto, Flag!"omitDefaultValues" omitDefaultValues = Yes.omitDefaultValues, T)(T value)
+SizedRange!ubyte toProtobufTagged(Proto proto, Flag!"omitDefaultValues" omitDefaultValues = Yes.omitDefaultValues, T)
+    (T value)
 if (isAggregateType!T)
 {
     validateProto!(proto, T);
@@ -421,8 +422,8 @@ if (isAggregateType!T)
 }
 
 auto toProtobufTagged(Proto proto, Flag!"omitDefaultValues" omitDefaultValues = Yes.omitDefaultValues, T)(T value)
-if (is(T == bool) || isIntegral!T || isFloatingPoint!T || is(T == string) || is(T == bytes)
-    || (isArray!T && proto.packed))
+if (isBoolean!T || isIntegral!T || isFloatingPoint!T || is(T == string) || is(T == bytes) ||
+    (isArray!T && proto.packed))
 {
     validateProto!(proto, T);
 
@@ -555,7 +556,7 @@ unittest
 }
 
 T fromProtobuf(T, Proto proto = Proto(1), R)(ref R inputRange)
-if (isInputRange!R && is(ElementType!R : ubyte) && (is(T == bool) || isIntegral!T || isFloatingPoint!T))
+if (isInputRange!R && is(ElementType!R : ubyte) && (isBoolean!T || isIntegral!T || isFloatingPoint!T))
 {
     validateProto!(proto, T);
 
@@ -652,6 +653,7 @@ if (isInputRange!R && is(ElementType!R : ubyte) && isAssociativeArray!T)
             break;
         default:
             enforce!ProtobufException(false, "Unexpected field tag " ~ tag.to!string ~ " while decoding a map");
+            break;
         }
     }
     enforce!ProtobufException((fromProtobufrState & 0x03) == 0x03, "Incomplete map element");
@@ -850,14 +852,19 @@ if (isInputRange!R && is(ElementType!R : ubyte))
     {
     case varint:
         inputRange.fromProtobufVarint;
+        break;
     case bits64:
         inputRange.takeN(8);
+        break;
     case withLength:
         inputRange.takeLengthPrefixed;
+        break;
     case bits32:
         inputRange.takeN(4);
+        break;
     default:
         enforce!ProtobufException(false, "Unknown wire format");
+        break;
     }
 }
 
@@ -865,7 +872,7 @@ void validateProto(Proto proto, T)()
 {
     static assert(proto.tag > 0 && proto.tag < (2 << 29));
 
-    static if (is(T == bool))
+    static if (isBoolean!T)
     {
         static assert(!proto.packed);
         static assert(proto.wire == "");
@@ -880,12 +887,7 @@ void validateProto(Proto proto, T)()
         static assert(!proto.packed);
         static assert(proto.wire == "");
     }
-    else static if (is(T == float) || is(T == double))
-    {
-        static assert(!proto.packed);
-        static assert(proto.wire == "");
-    }
-    else static if (is(T == string) || is(T == bytes))
+    else static if (isFloatingPoint!T)
     {
         static assert(!proto.packed);
         static assert(proto.wire == "");
@@ -908,8 +910,7 @@ void validateProto(Proto proto, T)()
         import std.algorithm : findSplit;
 
         static assert(!proto.packed);
-        static assert(is(KeyType!T == bool) || is(KeyType!T == int) || is(KeyType!T == uint)
-            || is(KeyType!T == long) || is(KeyType!T == ulong) || is(KeyType!T == string));
+        static assert(isBoolean!(KeyType!T) || isIntegral!(KeyType!T) || is(KeyType!T == string));
         static assert(is(ValueType!T == string) || is(ValueType!T == bytes)
             || (!isArray!(ValueType!T) && !isAssociativeArray!(ValueType!T)));
 
@@ -953,8 +954,7 @@ WireType wireType(Proto proto, T)()
     {
         return WireType.bits32;
     }
-    else static if (is(T == bool) || is(T == int) || is(T == uint) || is(T == long) || is(T == ulong)
-        || is(T == enum))
+    else static if (isBoolean!T || isIntegral!T)
     {
         return WireType.varint;
     }

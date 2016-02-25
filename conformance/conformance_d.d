@@ -1,7 +1,9 @@
 import std.array;
 import std.exception;
+import std.json;
 import std.stdio;
 import google.protobuf;
+import google.protobuf.json_encoding;
 import conformance.conformance;
 
 void doTest(ConformanceRequest request, ConformanceResponse response)
@@ -39,8 +41,17 @@ void doTest(ConformanceRequest request, ConformanceResponse response)
         response.protobufPayload = testMessage.toProtobuf.array;
         break;
     case WireFormat.JSON:
-        response.skipped = "JSON not supported";
-        return;
+        try
+        {
+            auto result = testMessage.toJSONValue;
+            response.jsonPayload = toJSON(&result);
+        }
+        catch (ProtobufException serializeException)
+        {
+            response.serializeError = serializeException.msg;
+            return;
+        }
+        break;
     }
 }
 

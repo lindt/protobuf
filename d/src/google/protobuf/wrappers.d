@@ -23,6 +23,13 @@ struct WrappedValue(T)
         value = inputRange.fromProtobuf!ProtobufMessage.value;
         return this;
     }
+
+    auto toJSONValue()
+    {
+        import google.protobuf.json_encoding;
+
+        return value.toJSONValue;
+    }
 }
 
 alias DoubleValue = WrappedValue!double;
