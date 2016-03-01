@@ -228,11 +228,20 @@ if (isArray!T && !is(T == string) && !is(T == bytes))
 T fromJSONValue(T)(JSONValue value, T result = null)
 if (isAssociativeArray!T)
 {
-    import std.conv : to;
+    import std.conv : ConvException, to;
 
     enforce!ProtobufException(value.type == JSON_TYPE.OBJECT, "Object JSONValue expected");
     foreach (k, v; value.object)
-        result[k.to!(KeyType!T)] = v.fromJSONValue!(ValueType!T);
+    {
+        try
+        {
+            result[k.to!(KeyType!T)] = v.fromJSONValue!(ValueType!T);
+        }
+        catch (ConvException exception)
+        {
+            throw new ProtobufException(exception.msg);
+        }
+    }
 
     return result;
 }
@@ -270,4 +279,61 @@ unittest
 
     assert(fromJSONValue!(bool[int])(parseJSON(`{"1": false, "2": true}`)) == [1 : false, 2 : true]);
     assertThrown!ProtobufException(fromJSONValue!(bool[int])(JSONValue(`{"1": false, "2": true}`)));
+    assertThrown!ProtobufException(fromJSONValue!(bool[int])(parseJSON(`{"foo": false, "2": true}`)));
+}
+
+T fromJSONValue(T)(JSONValue value, T result = T.init)
+if (isAggregateType!T)
+{
+    import std.string : endsWith;
+    import std.traits : hasMember;
+
+    enforce!ProtobufException(value.type == JSON_TYPE.OBJECT, "Object JSONValue expected");
+
+    static if (is(T == class))
+    {
+        if (result is null)
+            result = new T;
+    }
+
+    static if (hasMember!(T, "fromJSONValue"))
+    {
+        return result.fromJSONValue(value);
+    }
+    else
+    {
+        JSONValue[string] members = value.object;
+
+        foreach (field; Message!T.fields)
+        {
+            static if (field.endsWith('_'))
+                enum jsonName = field[0 .. $ - 1];
+            else
+                enum jsonName = field;
+
+            auto fieldValue = (jsonName in members);
+            if (fieldValue !is null)
+                mixin("result." ~ field) = fromJSONValue!(typeof(mixin("T." ~ field)))(*fieldValue);
+        }
+        return result;
+    }
+}
+
+unittest
+{
+    import std.exception : assertThrown;
+    import std.json : parseJSON;
+
+    struct Foo
+    {
+        @Proto(1) int a;
+        @Proto(3) string b;
+        @Proto(4) bool c;
+    }
+
+    auto foo = Foo(10, "abc", false);
+
+    assert(fromJSONValue!Foo(parseJSON(`{"a":10, "b":"abc"}`)) == Foo(10, "abc", false));
+    assert(fromJSONValue!Foo(parseJSON(`{"a": 10, "b": "abc", "c": false}`)) == Foo(10, "abc", false));
+    assertThrown!ProtobufException(fromJSONValue!Foo(parseJSON(`{"a":10, "b":100}`)));
 }

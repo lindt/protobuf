@@ -725,7 +725,7 @@ if (isInputRange!R && is(ElementType!R : ubyte) && isAggregateType!T)
 
     static if (hasMember!(T, "fromProtobuf"))
     {
-        result.fromProtobuf(inputRange);
+        return result.fromProtobuf(inputRange);
     }
     else
     {
@@ -791,9 +791,8 @@ if (isInputRange!R && is(ElementType!R : ubyte) && isAggregateType!T)
                 break;
             }
         }
+        return result;
     }
-
-    return result;
 }
 
 unittest
