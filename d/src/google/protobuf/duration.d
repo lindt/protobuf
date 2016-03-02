@@ -1,6 +1,7 @@
 module google.protobuf.duration;
 
 import core.time : StdDuration = Duration;
+import std.json : JSONValue;
 import google.protobuf;
 
 struct Duration
@@ -38,7 +39,7 @@ struct Duration
     auto toJSONValue()
     {
         import std.format : format;
-        import google.protobuf.json_encoding;
+        import google.protobuf.json_encoding : toJSONValue;
 
         validateRange;
 
@@ -60,6 +61,33 @@ struct Duration
             return "%s%d.%0*ds".format(negative ? "-" : "", seconds, fractionalLength, fractionalDigits).toJSONValue;
         else
             return "%s%ds".format(negative ? "-" : "", seconds).toJSONValue;
+    }
+
+    Duration fromJSONValue(JSONValue value)
+    {
+        import core.time : dur;
+        import std.algorithm : findSplit;
+        import std.conv : ConvException, to;
+        import google.protobuf.json_encoding : fromJSONValue;
+
+        string str = value.fromJSONValue!string;
+        enforce!ProtobufException(str[$ - 1] == 's', "Duration JSON encoding does not end with 's'");
+
+        str = str[0 .. $ - 1];
+        auto split = str.findSplit(".");
+
+        try
+        {
+            auto secondsValue = split[0].to!long;
+            auto nsecsValue = split[2].empty ? 0 : (split[2] ~ "00000000")[0 .. 9].to!int;
+
+            duration = dur!"seconds"(secondsValue) + dur!"nsecs"(nsecsValue);
+            return this;
+        }
+        catch (ConvException exception)
+        {
+            throw new ProtobufException(exception.msg);
+        }
     }
 
     private void validateRange()

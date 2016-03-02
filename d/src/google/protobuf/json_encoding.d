@@ -285,7 +285,6 @@ unittest
 T fromJSONValue(T)(JSONValue value, T result = T.init)
 if (isAggregateType!T)
 {
-    import std.string : endsWith;
     import std.traits : hasMember;
 
     enforce!ProtobufException(value.type == JSON_TYPE.OBJECT, "Object JSONValue expected");
@@ -306,7 +305,7 @@ if (isAggregateType!T)
 
         foreach (field; Message!T.fields)
         {
-            static if (field.endsWith('_'))
+            static if (field[$ - 1] == '_')
                 enum jsonName = field[0 .. $ - 1];
             else
                 enum jsonName = field;

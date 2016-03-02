@@ -25,8 +25,22 @@ void doTest(ConformanceRequest request, ConformanceResponse response)
         }
         break;
     case ConformanceRequest.PayloadCase.caseJsonPayload:
-        response.skipped = "JSON not supported";
-        return;
+        try
+        {
+            auto payload = request.jsonPayload.save;
+            testMessage = parseJSON(payload).fromJSONValue!TestAllTypes;
+        }
+        catch (JSONException decodeException)
+        {
+            response.parseError = decodeException.msg;
+            return;
+        }
+        catch (ProtobufException decodeException)
+        {
+            response.parseError = decodeException.msg;
+            return;
+        }
+        break;
     case ConformanceRequest.PayloadCase.casePayloadNotSet:
         response.runtimeError = "Request didn't have payload.";
         return;

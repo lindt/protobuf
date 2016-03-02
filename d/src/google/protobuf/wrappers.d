@@ -1,5 +1,6 @@
 module google.protobuf.wrappers;
 
+import std.json : JSONValue;
 import google.protobuf;
 
 struct WrappedValue(T)
@@ -24,11 +25,19 @@ struct WrappedValue(T)
         return this;
     }
 
-    auto toJSONValue()
+    JSONValue toJSONValue()
     {
         import google.protobuf.json_encoding;
 
         return value.toJSONValue;
+    }
+
+    auto fromJSONValue(JSONValue jsonValue)
+    {
+        import google.protobuf.json_encoding;
+
+        value = jsonValue.fromJSONValue!T;
+        return this;
     }
 }
 
