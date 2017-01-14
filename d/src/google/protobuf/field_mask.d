@@ -1,5 +1,6 @@
 module google.protobuf.field_mask;
 
+import std.exception : enforce;
 import google.protobuf;
 
 struct FieldMask

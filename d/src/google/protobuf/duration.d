@@ -1,7 +1,9 @@
 module google.protobuf.duration;
 
 import core.time : StdDuration = Duration;
+import std.exception : enforce;
 import std.json : JSONValue;
+import std.range : empty;
 import google.protobuf;
 
 struct Duration

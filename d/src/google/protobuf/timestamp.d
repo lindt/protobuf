@@ -1,6 +1,7 @@
 module google.protobuf.timestamp;
 
 import std.datetime : SysTime, unixTimeToStdTime;
+import std.exception : enforce;
 import std.json : JSONValue;
 import google.protobuf;
 
@@ -62,7 +63,7 @@ struct Timestamp
 
     Timestamp fromJSONValue(JSONValue value)
     {
-        import google.protobuf.json_encoding;
+        import google.protobuf.json_encoding : fromJSONValue;
 
         timestamp.fromISOExtString(fromJSONValue!string(value));
         return this;

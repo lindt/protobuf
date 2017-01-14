@@ -1,5 +1,6 @@
 module google.protobuf.json_encoding;
 
+import std.exception : enforce;
 import std.json : JSON_TYPE, JSONValue;
 import std.traits : isAggregateType, isArray, isAssociativeArray, isBoolean, isFloatingPoint, isIntegral, isSigned;
 import std.typecons : Flag, No, Yes;
@@ -229,6 +230,7 @@ T fromJSONValue(T)(JSONValue value, T result = null)
 if (isAssociativeArray!T)
 {
     import std.conv : ConvException, to;
+    import std.traits : KeyType, ValueType;
 
     enforce!ProtobufException(value.type == JSON_TYPE.OBJECT, "Object JSONValue expected");
     foreach (k, v; value.object)
