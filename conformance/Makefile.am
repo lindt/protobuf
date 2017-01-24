@@ -23,7 +23,6 @@ other_language_protoc_outputs =                                \
   Conformance.pbobjc.m                                         \
   conformance_pb.js                                            \
   conformance_pb.rb                                            \
-  conformance.d                                                \
   com/google/protobuf/Any.java                                 \
   com/google/protobuf/AnyOrBuilder.java                        \
   com/google/protobuf/AnyProto.java                            \
@@ -65,6 +64,8 @@ other_language_protoc_outputs =                                \
   com/google/protobuf/ValueOrBuilder.java                      \
   com/google/protobuf/WrappersProto.java                       \
   com/google/protobuf_test_messages/proto3/TestMessagesProto3.java \
+  conformance/conformance.d                                    \
+  protobuf_test_messages/proto3/test_messages_proto3.d         \
   google/protobuf/any.pb.cc                                    \
   google/protobuf/any.pb.h                                     \
   google/protobuf/any.rb                                       \

@@ -243,8 +243,13 @@ string ModuleName(const FileDescriptor* file)
   if (file->package().empty()) {
     return EscapeKeywords(name);
   } else {
-    return EscapeKeywords(file->package(), '.') + '.' + EscapeKeywords(name);
+    return EscapeKeywords(file->package() + '.' + name, '.');
   }
+}
+
+string OutputFileName(const FileDescriptor* file)
+{
+  return StringReplace(ModuleName(file), ".", "/", true) + ".d";
 }
 
 string EnumValueName(const EnumValueDescriptor* enum_value) {

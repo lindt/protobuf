@@ -53,6 +53,8 @@ string TypeName(const FieldDescriptor* field);
 
 string ModuleName(const FileDescriptor* file);
 
+string OutputFileName(const FileDescriptor* file);
+
 string UnderscoresToCamelCase(const string& input, bool cap_next_letter);
 string EscapeKeywords(const string& input, char delim = '\0');
 

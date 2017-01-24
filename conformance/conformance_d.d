@@ -5,6 +5,7 @@ import std.stdio;
 import google.protobuf;
 import google.protobuf.json_encoding;
 import conformance.conformance;
+import protobuf_test_messages.proto3.test_messages_proto3;
 
 void doTest(ConformanceRequest request, ConformanceResponse response)
 {
