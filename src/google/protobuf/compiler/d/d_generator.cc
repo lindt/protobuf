@@ -50,9 +50,79 @@ namespace protobuf {
 namespace compiler {
 namespace d {
 
-// Forward decls.
-void GenerateMessage(const Descriptor* message, io::Printer* printer);
-void GenerateEnum(const EnumDescriptor* en, io::Printer* printer);
+void GenerateOneofCaseEnum(const OneofDescriptor* oneof,
+                           io::Printer* printer) {
+  printer->Print(
+    "enum $Name$Case\n{\n",
+    "Name", UnderscoresToCamelCase(oneof->name(), true));
+  printer->Indent();
+  printer->Indent();
+  printer->Print(
+    "case$Name$NotSet = 0,\n",
+    "Name", UnderscoresToCamelCase(oneof->name(), true));
+
+  for (int i = 0; i < oneof->field_count(); i++) {
+    const FieldDescriptor* field = oneof->field(i);
+    printer->Print("case$Name$ = $number$,\n",
+      "Name", UnderscoresToCamelCase(field->name(), true),
+      "number", SimpleItoa(field->number()));
+  }
+
+  printer->Outdent();
+  printer->Outdent();
+  printer->Print(
+    "}\n$Name$Case _$name$Case = $Name$Case.case$Name$NotSet;\n"
+    "@property $Name$Case $name$Case() { return _$name$Case; }\n"
+    "void clear$Name$() { _$name$Case = $Name$Case.case$Name$NotSet; }\n",
+    "Name", UnderscoresToCamelCase(oneof->name(), true),
+    "name", UnderscoresToCamelCase(oneof->name(), false));
+}
+
+void GenerateOneofField(const FieldDescriptor* field, io::Printer* printer,
+                   bool print_initializer) {
+  printer->Print(
+    "@Proto($number$",
+    "number", SimpleItoa(field->number()));
+  if (WireFormat(field).length()) {
+    printer->Print(
+      ", \"$format$\"",
+      "format", WireFormat(field));
+  }
+  printer->Print(
+    ") $type$ _$name$",
+    "name", EscapeKeywords(field->camelcase_name()),
+    "type", TypeName(field));
+  if (print_initializer) {
+    printer->Print(
+      " = defaultValue!($type$)",
+      "type", TypeName(field));
+  }
+  printer->Print(
+    "; mixin(oneofAccessors!_$name$);\n",
+    "name", EscapeKeywords(field->camelcase_name()));
+}
+
+void GenerateOneofUnion(const OneofDescriptor* oneof, io::Printer* printer) {
+  printer->Print(
+    "@Oneof(\"_$name$Case\") union\n{\n",
+    "name", UnderscoresToCamelCase(oneof->name(), false));
+  printer->Indent();
+  printer->Indent();
+
+  for (int i = 0; i < oneof->field_count(); i++) {
+    const FieldDescriptor* field = oneof->field(i);
+    GenerateOneofField(field, printer, i == 0);
+  }
+
+  printer->Outdent();
+  printer->Outdent();
+  printer->Print("}\n");
+}
+
+void GenerateOneof(const OneofDescriptor* oneof, io::Printer* printer) {
+  GenerateOneofCaseEnum(oneof, printer);
+  GenerateOneofUnion(oneof, printer);
+}
 
 void GenerateField(const FieldDescriptor* field, io::Printer* printer,
                    bool print_initializer) {
@@ -76,101 +146,24 @@ void GenerateField(const FieldDescriptor* field, io::Printer* printer,
   printer->Print(";\n");
 }
 
-void GenerateOneofCaseEnum(const OneofDescriptor* oneof,
-                           io::Printer* printer) {
+void GenerateEnum(const EnumDescriptor* en, io::Printer* printer) {
   printer->Print(
-    "enum $Name$Case\n{\n",
-    "Name", UnderscoresToCamelCase(oneof->name(), true));
-  printer->Indent();
-  printer->Indent();
-  printer->Print(
-    "case$Name$NotSet = 0,\n",
-    "Name", UnderscoresToCamelCase(oneof->name(), true));
-
-  for (int i = 0; i < oneof->field_count(); i++) {
-    const FieldDescriptor* field = oneof->field(i);
-    printer->Print("case$Name$ = $number$,\n",
-      "Name", UnderscoresToCamelCase(field->name(), true),
-      "number", SimpleItoa(field->number()));
-  }
-
-  printer->Outdent();
-  printer->Outdent();
-  printer->Print(
-    "}\nprivate $Name$Case $name$Case_ = $Name$Case.case$Name$NotSet;\n"
-    "@property $Name$Case $name$Case() { return $name$Case_; }\n"
-    "void clear$Name$() { $name$Case_ = $Name$Case.case$Name$NotSet; }\n",
-    "Name", UnderscoresToCamelCase(oneof->name(), true),
-    "name", UnderscoresToCamelCase(oneof->name(), false));
-}
-
-void GenerateOneofUnion(const OneofDescriptor* oneof, io::Printer* printer) {
-  printer->Print(
-    "union $name$\n{\n",
-    "name", UnderscoresToCamelCase(oneof->name(), true));
+    "enum $name$\n{\n",
+    "name", EscapeKeywords(en->name()));
   printer->Indent();
   printer->Indent();
 
-  for (int i = 0; i < oneof->field_count(); i++) {
-    const FieldDescriptor* field = oneof->field(i);
-    GenerateField(field, printer, i == 0);
-  }
-
-  printer->Outdent();
-  printer->Outdent();
-  printer->Print(
-    "}\nprivate $Name$ $name$;\n",
-    "Name", UnderscoresToCamelCase(oneof->name(), true),
-    "name", UnderscoresToCamelCase(oneof->name(), false));
-}
-
-void GenerateOneofGetter(const OneofDescriptor* oneof,
-                         const FieldDescriptor* field,
-                         io::Printer* printer) {
-  printer->Print(
-    "@property @Proto($number$",
-    "number", SimpleItoa(field->number()));
-  if (WireFormat(field).length()) {
+  for (int i = 0; i < en->value_count(); i++) {
+    const EnumValueDescriptor* value = en->value(i);
     printer->Print(
-      ", \"$format$\"",
-      "format", WireFormat(field));
+      "$name$ = $number$,\n",
+      "name", EscapeKeywords(value->name()),
+      "number", SimpleItoa(value->number()));
   }
-  printer->Print(
-    ") $type$ $name$() { return $oneof$Case == $Oneof$Case.case$Name$ ? "
-    "$oneof$.$name$ : defaultValue!($type$); }\n",
-    "Name", UnderscoresToCamelCase(field->name(), true),
-    "name", UnderscoresToCamelCase(field->name(), false),
-    "type", TypeName(field),
-    "Oneof", UnderscoresToCamelCase(oneof->name(), true),
-    "oneof", UnderscoresToCamelCase(oneof->name(), false));
-}
 
-void GenerateOneofSetter(const OneofDescriptor* oneof,
-                         const FieldDescriptor* field,
-                         io::Printer* printer) {
-  printer->Print(
-    "@property void $name$($type$ value) { "
-    "$oneof$Case_ = $Oneof$Case.case$Name$; $oneof$.$name$ = value; }\n",
-    "Name", UnderscoresToCamelCase(field->name(), true),
-    "name", UnderscoresToCamelCase(field->name(), false),
-    "type", TypeName(field),
-    "Oneof", UnderscoresToCamelCase(oneof->name(), true),
-    "oneof", UnderscoresToCamelCase(oneof->name(), false));
-}
-
-void GenerateOneofAccessors(const OneofDescriptor* oneof,
-                            io::Printer* printer) {
-  for (int i = 0; i < oneof->field_count(); i++) {
-    const FieldDescriptor* field = oneof->field(i);
-    GenerateOneofGetter(oneof, field, printer);
-    GenerateOneofSetter(oneof, field, printer);
-  }
-}
-
-void GenerateOneof(const OneofDescriptor* oneof, io::Printer* printer) {
-  GenerateOneofCaseEnum(oneof, printer);
-  GenerateOneofUnion(oneof, printer);
-  GenerateOneofAccessors(oneof, printer);
+  printer->Outdent();
+  printer->Outdent();
+  printer->Print("}\n");
 }
 
 bool cmp_by_tag(const FieldDescriptor* a, const FieldDescriptor* b) {
@@ -226,27 +219,6 @@ void GenerateMessage(const Descriptor* message, io::Printer* printer) {
   printer->Outdent();
   printer->Outdent();
   printer->Print("}\n");
-}
-
-void GenerateEnum(const EnumDescriptor* en, io::Printer* printer) {
-  printer->Print(
-    "enum $name$\n{\n",
-    "name", EscapeKeywords(en->name()));
-  printer->Indent();
-  printer->Indent();
-
-  for (int i = 0; i < en->value_count(); i++) {
-    const EnumValueDescriptor* value = en->value(i);
-    printer->Print(
-      "$name$ = $number$,\n",
-      "name", EscapeKeywords(value->name()),
-      "number", SimpleItoa(value->number()));
-  }
-
-  printer->Outdent();
-  printer->Outdent();
-  printer->Print(
-    "}\n");
 }
 
 void GenerateFile(const FileDescriptor* file, io::Printer* printer) {

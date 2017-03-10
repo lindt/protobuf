@@ -5,7 +5,7 @@ import google.protobuf;
 
 struct WrappedValue(T)
 {
-    private struct ProtobufMessage
+    private struct _Message
     {
         @Proto(1) T value = defaultValue!(T);
     }
@@ -16,12 +16,12 @@ struct WrappedValue(T)
 
     auto toProtobuf()
     {
-        return ProtobufMessage(value).toProtobuf;
+        return _Message(value).toProtobuf;
     }
 
     auto fromProtobuf(R)(ref R inputRange)
     {
-        value = inputRange.fromProtobuf!ProtobufMessage.value;
+        value = inputRange.fromProtobuf!_Message.value;
         return this;
     }
 

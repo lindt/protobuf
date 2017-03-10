@@ -30,9 +30,9 @@ unittest
     import std.range : empty;
 
     assert(Empty().toProtobuf.empty);
-    ubyte[] bla = [1, 2, 3];
-    Empty().fromProtobuf(bla);
-    assert(bla.empty);
+    ubyte[] foo = [1, 2, 3];
+    Empty().fromProtobuf(foo);
+    assert(foo.empty);
 }
 
 unittest

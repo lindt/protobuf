@@ -59,7 +59,7 @@ void doTest(ConformanceRequest request, ConformanceResponse response)
         try
         {
             auto result = testMessage.toJSONValue;
-            response.jsonPayload = toJSON(&result);
+            response.jsonPayload = toJSON(result);
         }
         catch (ProtobufException serializeException)
         {

@@ -8,7 +8,7 @@ import google.protobuf;
 
 struct Duration
 {
-    private struct ProtobufMessage
+    private struct _Message
     {
         @Proto(1) long seconds = defaultValue!(long);
         @Proto(2) int nanos = defaultValue!(int);
@@ -23,7 +23,7 @@ struct Duration
         validateRange;
 
         auto splitedDuration = duration.split!("seconds", "nsecs");
-        auto protobufMessage = ProtobufMessage(splitedDuration.seconds, cast(int) splitedDuration.nsecs);
+        auto protobufMessage = _Message(splitedDuration.seconds, cast(int) splitedDuration.nsecs);
 
         return protobufMessage.toProtobuf;
     }
@@ -32,7 +32,7 @@ struct Duration
     {
         import core.time : dur;
 
-        auto protobufMessage = inputRange.fromProtobuf!ProtobufMessage;
+        auto protobufMessage = inputRange.fromProtobuf!_Message;
         duration = dur!"seconds"(protobufMessage.seconds) + dur!"nsecs"(protobufMessage.nanos);
 
         return this;
@@ -70,7 +70,7 @@ struct Duration
         import core.time : dur;
         import std.algorithm : findSplit;
         import std.conv : ConvException, to;
-        import google.protobuf.json_encoding : fromJSONValue;
+        import google.protobuf.json_decoding : fromJSONValue;
 
         string str = value.fromJSONValue!string;
         enforce!ProtobufException(str[$ - 1] == 's', "Duration JSON encoding does not end with 's'");

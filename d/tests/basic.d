@@ -98,28 +98,17 @@ class OneofMessage
         caseC = 3,
         caseD = 4,
     }
-    private MyOneofCase myOneofCase_ = MyOneofCase.caseMyOneofNotSet;
-    @property MyOneofCase myOneofCase() { return myOneofCase_; }
-    void clearMyOneof() { myOneofCase_ = MyOneofCase.caseMyOneofNotSet; }
-    union MyOneof
+    MyOneofCase _myOneofCase = MyOneofCase.caseMyOneofNotSet;
+    @property MyOneofCase myOneofCase() { return _myOneofCase; }
+    void clearMyOneof() { _myOneofCase = MyOneofCase.caseMyOneofNotSet; }
+    @Oneof("_myOneofCase") union
     {
-        @Proto(1) string a = defaultValue!string;
-        @Proto(2) int b;
-        @Proto(3) TestMessage2 c;
-        @Proto(4) TestEnum d;
+        @Proto(1) string _a = defaultValue!string; mixin(oneofAccessors!_a);
+        @Proto(2) int _b; mixin(oneofAccessors!_b);
+        @Proto(3) TestMessage2 _c; mixin(oneofAccessors!_c);
+        @Proto(4) TestEnum _d; mixin(oneofAccessors!_d);
     }
-    private MyOneof myOneof;
-    @property @Proto(1) string a() { return myOneofCase == MyOneofCase.caseA ? myOneof.a : defaultValue!(string); }
-    @property void a(string value) { myOneofCase_ = MyOneofCase.caseA; myOneof.a = value; }
-    @property @Proto(2) int b() { return myOneofCase == MyOneofCase.caseB ? myOneof.b : defaultValue!(int); }
-    @property void b(int value) { myOneofCase_ = MyOneofCase.caseB; myOneof.b = value; }
-    @property @Proto(3) TestMessage2 c() { return myOneofCase == MyOneofCase.caseC ? myOneof.c : defaultValue!(TestMessage2); }
-    @property void c(TestMessage2 value) { myOneofCase_ = MyOneofCase.caseC; myOneof.c = value; }
-    @property @Proto(4) TestEnum d() { return myOneofCase == MyOneofCase.caseD ? myOneof.d : defaultValue!(TestEnum); }
-    @property void d(TestEnum value) { myOneofCase_ = MyOneofCase.caseD; myOneof.d = value; }
 }
-
-
 
 
 // ------------ test cases ---------------
@@ -185,6 +174,9 @@ unittest
 // test map field
 unittest
 {
+    import std.algorithm : sort;
+    import std.array : array;
+
     auto m = new MapMessage;
     assert(m.mapStringInt32 is null);
     assert(m.mapStringMsg is null);
@@ -194,7 +186,7 @@ unittest
     auto b = new TestMessage2;
     b.foo = 2;
     m.mapStringMsg = ["a": a, "b": b];
-    assert(m.mapStringInt32.keys.sort == ["a", "b"]);
+    assert(m.mapStringInt32.keys.sort().array == ["a", "b"]);
     assert(m.mapStringInt32["a"] == 1);
     assert(m.mapStringMsg["b"].foo == 2);
 

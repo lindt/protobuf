@@ -21,31 +21,18 @@ class Value
         caseStructValue = 5,
         caseListValue = 6,
     }
-    private KindCase kindCase_ = KindCase.caseKindNotSet;
-    @property KindCase kindCase() { return kindCase_; }
-    void clearKind() { kindCase_ = KindCase.caseKindNotSet; }
-    union Kind
+    KindCase _kindCase = KindCase.caseKindNotSet;
+    @property KindCase kindCase() { return _kindCase; }
+    void clearKind() { _kindCase = KindCase.caseKindNotSet; }
+    @Oneof("_kindCase") union
     {
-        @Proto(1) NullValue nullValue = defaultValue!(NullValue);
-        @Proto(2) double numberValue;
-        @Proto(3) string stringValue;
-        @Proto(4) bool boolValue;
-        @Proto(5) Struct structValue;
-        @Proto(6) ListValue listValue;
+        @Proto(1) NullValue _nullValue = defaultValue!(NullValue); mixin(oneofAccessors!_nullValue);
+        @Proto(2) double _numberValue; mixin(oneofAccessors!_numberValue);
+        @Proto(3) string _stringValue; mixin(oneofAccessors!_stringValue);
+        @Proto(4) bool _boolValue; mixin(oneofAccessors!_boolValue);
+        @Proto(5) Struct _structValue; mixin(oneofAccessors!_structValue);
+        @Proto(6) ListValue _listValue; mixin(oneofAccessors!_listValue);
     }
-    private Kind kind;
-    @property @Proto(1) NullValue nullValue() { return kindCase == KindCase.caseNullValue ? kind.nullValue : defaultValue!(NullValue); }
-    @property void nullValue(NullValue value) { kindCase_ = KindCase.caseNullValue; kind.nullValue = value; }
-    @property @Proto(2) double numberValue() { return kindCase == KindCase.caseNumberValue ? kind.numberValue : defaultValue!(double); }
-    @property void numberValue(double value) { kindCase_ = KindCase.caseNumberValue; kind.numberValue = value; }
-    @property @Proto(3) string stringValue() { return kindCase == KindCase.caseStringValue ? kind.stringValue : defaultValue!(string); }
-    @property void stringValue(string value) { kindCase_ = KindCase.caseStringValue; kind.stringValue = value; }
-    @property @Proto(4) bool boolValue() { return kindCase == KindCase.caseBoolValue ? kind.boolValue : defaultValue!(bool); }
-    @property void boolValue(bool value) { kindCase_ = KindCase.caseBoolValue; kind.boolValue = value; }
-    @property @Proto(5) Struct structValue() { return kindCase == KindCase.caseStructValue ? kind.structValue : defaultValue!(Struct); }
-    @property void structValue(Struct value) { kindCase_ = KindCase.caseStructValue; kind.structValue = value; }
-    @property @Proto(6) ListValue listValue() { return kindCase == KindCase.caseListValue ? kind.listValue : defaultValue!(ListValue); }
-    @property void listValue(ListValue value) { kindCase_ = KindCase.caseListValue; kind.listValue = value; }
 }
 
 class ListValue

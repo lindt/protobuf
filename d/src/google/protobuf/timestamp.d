@@ -7,7 +7,7 @@ import google.protobuf;
 
 struct Timestamp
 {
-    private struct ProtobufMessage
+    private struct _Message
     {
       @Proto(1) long seconds = defaultValue!(long);
       @Proto(2) int nanos = defaultValue!(int);
@@ -20,14 +20,14 @@ struct Timestamp
     auto toProtobuf()
     {
         long epochDelta = timestamp.stdTime - unixTimeToStdTime(0);
-        auto protobufMessage = ProtobufMessage(epochDelta / 1_000_000_0, epochDelta % 1_000_000_0 * 100);
+        auto protobufMessage = _Message(epochDelta / 1_000_000_0, epochDelta % 1_000_000_0 * 100);
 
         return protobufMessage.toProtobuf;
     }
 
     Timestamp fromProtobuf(R)(ref R inputRange)
     {
-        auto protobufMessage = inputRange.fromProtobuf!ProtobufMessage;
+        auto protobufMessage = inputRange.fromProtobuf!_Message;
         long epochDelta = protobufMessage.seconds * 1_000_000_0 + protobufMessage.nanos / 100;
         timestamp.stdTime = epochDelta + unixTimeToStdTime(0);
 
@@ -63,7 +63,7 @@ struct Timestamp
 
     Timestamp fromJSONValue(JSONValue value)
     {
-        import google.protobuf.json_encoding : fromJSONValue;
+        import google.protobuf.json_decoding : fromJSONValue;
 
         timestamp.fromISOExtString(fromJSONValue!string(value));
         return this;

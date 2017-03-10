@@ -46,10 +46,10 @@ protoc_middleman_d: addressbook.proto
 	@touch protoc_middleman_d
 
 add_person_d: add_person.d protoc_middleman_d
-	dmd -gc -I../d/src add_person.d tutorial/addressbook.d ../d/src/google/protobuf/package.d -ofadd_person_d
+	dmd -gc -I../d/src add_person.d tutorial/addressbook.d ../d/src/google/protobuf/*.d -ofadd_person_d
 
 list_people_d: list_people.d protoc_middleman_d
-	dmd -gc -I../d/src list_people.d tutorial/addressbook.d ../d/src/google/protobuf/package.d -oflist_people_d
+	dmd -gc -I../d/src list_people.d tutorial/addressbook.d ../d/src/google/protobuf/*.d -oflist_people_d
 
 add_person_go: add_person.go protoc_middleman_go
 	go build -o add_person_go add_person.go

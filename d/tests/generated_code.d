@@ -44,46 +44,23 @@ class TestMessage
         caseOneofEnum = 50,
         caseOneofMsg = 51,
     }
-    private MyOneofCase myOneofCase_ = MyOneofCase.caseMyOneofNotSet;
-    @property MyOneofCase myOneofCase() { return myOneofCase_; }
-    void clearMyOneof() { myOneofCase_ = MyOneofCase.caseMyOneofNotSet; }
-    union MyOneof
+    MyOneofCase _myOneofCase = MyOneofCase.caseMyOneofNotSet;
+    @property MyOneofCase myOneofCase() { return _myOneofCase; }
+    void clearMyOneof() { _myOneofCase = MyOneofCase.caseMyOneofNotSet; }
+    @Oneof("_myOneofCase") union
     {
-        @Proto(41) int oneofInt32 = defaultValue!(int);
-        @Proto(42) long oneofInt64;
-        @Proto(43) uint oneofUint32;
-        @Proto(44) ulong oneofUint64;
-        @Proto(45) bool oneofBool;
-        @Proto(46) double oneofDouble;
-        @Proto(47) float oneofFloat;
-        @Proto(48) string oneofString;
-        @Proto(49) bytes oneofBytes;
-        @Proto(50) TestEnum oneofEnum;
-        @Proto(51) TestMessage oneofMsg;
+        @Proto(41) int _oneofInt32 = defaultValue!(int); mixin(oneofAccessors!_oneofInt32);
+        @Proto(42) long _oneofInt64; mixin(oneofAccessors!_oneofInt64);
+        @Proto(43) uint _oneofUint32; mixin(oneofAccessors!_oneofUint32);
+        @Proto(44) ulong _oneofUint64; mixin(oneofAccessors!_oneofUint64);
+        @Proto(45) bool _oneofBool; mixin(oneofAccessors!_oneofBool);
+        @Proto(46) double _oneofDouble; mixin(oneofAccessors!_oneofDouble);
+        @Proto(47) float _oneofFloat; mixin(oneofAccessors!_oneofFloat);
+        @Proto(48) string _oneofString; mixin(oneofAccessors!_oneofString);
+        @Proto(49) bytes _oneofBytes; mixin(oneofAccessors!_oneofBytes);
+        @Proto(50) TestEnum _oneofEnum; mixin(oneofAccessors!_oneofEnum);
+        @Proto(51) TestMessage _oneofMsg; mixin(oneofAccessors!_oneofMsg);
     }
-    private MyOneof myOneof;
-    @property @Proto(41) int oneofInt32() { return myOneofCase == MyOneofCase.caseOneofInt32 ? myOneof.oneofInt32 : defaultValue!(int); }
-    @property void oneofInt32(int value) { myOneofCase_ = MyOneofCase.caseOneofInt32; myOneof.oneofInt32 = value; }
-    @property @Proto(42) long oneofInt64() { return myOneofCase == MyOneofCase.caseOneofInt64 ? myOneof.oneofInt64 : defaultValue!(long); }
-    @property void oneofInt64(long value) { myOneofCase_ = MyOneofCase.caseOneofInt64; myOneof.oneofInt64 = value; }
-    @property @Proto(43) uint oneofUint32() { return myOneofCase == MyOneofCase.caseOneofUint32 ? myOneof.oneofUint32 : defaultValue!(uint); }
-    @property void oneofUint32(uint value) { myOneofCase_ = MyOneofCase.caseOneofUint32; myOneof.oneofUint32 = value; }
-    @property @Proto(44) ulong oneofUint64() { return myOneofCase == MyOneofCase.caseOneofUint64 ? myOneof.oneofUint64 : defaultValue!(ulong); }
-    @property void oneofUint64(ulong value) { myOneofCase_ = MyOneofCase.caseOneofUint64; myOneof.oneofUint64 = value; }
-    @property @Proto(45) bool oneofBool() { return myOneofCase == MyOneofCase.caseOneofBool ? myOneof.oneofBool : defaultValue!(bool); }
-    @property void oneofBool(bool value) { myOneofCase_ = MyOneofCase.caseOneofBool; myOneof.oneofBool = value; }
-    @property @Proto(46) double oneofDouble() { return myOneofCase == MyOneofCase.caseOneofDouble ? myOneof.oneofDouble : defaultValue!(double); }
-    @property void oneofDouble(double value) { myOneofCase_ = MyOneofCase.caseOneofDouble; myOneof.oneofDouble = value; }
-    @property @Proto(47) float oneofFloat() { return myOneofCase == MyOneofCase.caseOneofFloat ? myOneof.oneofFloat : defaultValue!(float); }
-    @property void oneofFloat(float value) { myOneofCase_ = MyOneofCase.caseOneofFloat; myOneof.oneofFloat = value; }
-    @property @Proto(48) string oneofString() { return myOneofCase == MyOneofCase.caseOneofString ? myOneof.oneofString : defaultValue!(string); }
-    @property void oneofString(string value) { myOneofCase_ = MyOneofCase.caseOneofString; myOneof.oneofString = value; }
-    @property @Proto(49) bytes oneofBytes() { return myOneofCase == MyOneofCase.caseOneofBytes ? myOneof.oneofBytes : defaultValue!(bytes); }
-    @property void oneofBytes(bytes value) { myOneofCase_ = MyOneofCase.caseOneofBytes; myOneof.oneofBytes = value; }
-    @property @Proto(50) TestEnum oneofEnum() { return myOneofCase == MyOneofCase.caseOneofEnum ? myOneof.oneofEnum : defaultValue!(TestEnum); }
-    @property void oneofEnum(TestEnum value) { myOneofCase_ = MyOneofCase.caseOneofEnum; myOneof.oneofEnum = value; }
-    @property @Proto(51) TestMessage oneofMsg() { return myOneofCase == MyOneofCase.caseOneofMsg ? myOneof.oneofMsg : defaultValue!(TestMessage); }
-    @property void oneofMsg(TestMessage value) { myOneofCase_ = MyOneofCase.caseOneofMsg; myOneof.oneofMsg = value; }
     @Proto(61) string[int] mapInt32String = defaultValue!(string[int]);
     @Proto(62) string[long] mapInt64String = defaultValue!(string[long]);
     @Proto(63) string[uint] mapUint32String = defaultValue!(string[uint]);
