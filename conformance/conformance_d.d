@@ -13,7 +13,7 @@ void doTest(ConformanceRequest request, ConformanceResponse response)
 
     final switch (request.payloadCase)
     {
-    case ConformanceRequest.PayloadCase.caseProtobufPayload:
+    case ConformanceRequest.PayloadCase.protobufPayload:
         try
         {
             auto payload = request.protobufPayload.save;
@@ -25,7 +25,7 @@ void doTest(ConformanceRequest request, ConformanceResponse response)
             return;
         }
         break;
-    case ConformanceRequest.PayloadCase.caseJsonPayload:
+    case ConformanceRequest.PayloadCase.jsonPayload:
         try
         {
             auto payload = request.jsonPayload.save;
@@ -42,8 +42,8 @@ void doTest(ConformanceRequest request, ConformanceResponse response)
             return;
         }
         break;
-    case ConformanceRequest.PayloadCase.casePayloadNotSet:
-        response.runtimeError = "Request didn't have payload.";
+    case ConformanceRequest.PayloadCase.payloadNotSet:
+        response.runtimeError = "Request has no payload.";
         return;
     }
 

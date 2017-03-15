@@ -199,7 +199,7 @@ private static auto toProtobufByField(alias field, T)(T message)
     static if (isOneof!field)
     {
         auto oneofCase = __traits(getMember, message, oneofcaseFieldName!field);
-        enum fieldEnumValue = fieldName.skipOver("_").toUpper;
+        enum fieldEnumValue = fieldName.skipOver('_');
         enum fieldCase = typeof(oneofCase).stringof ~ "." ~ fieldEnumValue;
         if (oneofCase != mixin(fieldCase))
             return typeof(toProtobufByProto!proto(mixin(fieldInstanceName))).init;

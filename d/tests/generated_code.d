@@ -31,22 +31,22 @@ class TestMessage
     @Proto(31) TestMessage[] repeatedMsg = defaultValue!(TestMessage[]);
     enum MyOneofCase
     {
-        caseMyOneofNotSet = 0,
-        caseOneofInt32 = 41,
-        caseOneofInt64 = 42,
-        caseOneofUint32 = 43,
-        caseOneofUint64 = 44,
-        caseOneofBool = 45,
-        caseOneofDouble = 46,
-        caseOneofFloat = 47,
-        caseOneofString = 48,
-        caseOneofBytes = 49,
-        caseOneofEnum = 50,
-        caseOneofMsg = 51,
+        myOneofNotSet = 0,
+        oneofInt32 = 41,
+        oneofInt64 = 42,
+        oneofUint32 = 43,
+        oneofUint64 = 44,
+        oneofBool = 45,
+        oneofDouble = 46,
+        oneofFloat = 47,
+        oneofString = 48,
+        oneofBytes = 49,
+        oneofEnum = 50,
+        oneofMsg = 51,
     }
-    MyOneofCase _myOneofCase = MyOneofCase.caseMyOneofNotSet;
+    MyOneofCase _myOneofCase = MyOneofCase.myOneofNotSet;
     @property MyOneofCase myOneofCase() { return _myOneofCase; }
-    void clearMyOneof() { _myOneofCase = MyOneofCase.caseMyOneofNotSet; }
+    void clearMyOneof() { _myOneofCase = MyOneofCase.myOneofNotSet; }
     @Oneof("_myOneofCase") union
     {
         @Proto(41) int _oneofInt32 = defaultValue!(int); mixin(oneofAccessors!_oneofInt32);

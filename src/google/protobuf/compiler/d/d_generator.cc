@@ -58,22 +58,22 @@ void GenerateOneofCaseEnum(const OneofDescriptor* oneof,
   printer->Indent();
   printer->Indent();
   printer->Print(
-    "case$Name$NotSet = 0,\n",
-    "Name", UnderscoresToCamelCase(oneof->name(), true));
+    "$name$NotSet = 0,\n",
+    "name", UnderscoresToCamelCase(oneof->name(), false));
 
   for (int i = 0; i < oneof->field_count(); i++) {
     const FieldDescriptor* field = oneof->field(i);
-    printer->Print("case$Name$ = $number$,\n",
-      "Name", UnderscoresToCamelCase(field->name(), true),
+    printer->Print("$name$ = $number$,\n",
+      "name", UnderscoresToCamelCase(field->name(), false),
       "number", SimpleItoa(field->number()));
   }
 
   printer->Outdent();
   printer->Outdent();
   printer->Print(
-    "}\n$Name$Case _$name$Case = $Name$Case.case$Name$NotSet;\n"
+    "}\n$Name$Case _$name$Case = $Name$Case.$name$NotSet;\n"
     "@property $Name$Case $name$Case() { return _$name$Case; }\n"
-    "void clear$Name$() { _$name$Case = $Name$Case.case$Name$NotSet; }\n",
+    "void clear$Name$() { _$name$Case = $Name$Case.$name$NotSet; }\n",
     "Name", UnderscoresToCamelCase(oneof->name(), true),
     "name", UnderscoresToCamelCase(oneof->name(), false));
 }

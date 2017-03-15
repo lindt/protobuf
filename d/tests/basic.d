@@ -92,15 +92,15 @@ class OneofMessage
 {
     enum MyOneofCase
     {
-        caseMyOneofNotSet = 0,
-        caseA = 1,
-        caseB = 2,
-        caseC = 3,
-        caseD = 4,
+        myOneofNotSet = 0,
+        a = 1,
+        b = 2,
+        c = 3,
+        d = 4,
     }
-    MyOneofCase _myOneofCase = MyOneofCase.caseMyOneofNotSet;
+    MyOneofCase _myOneofCase = MyOneofCase.myOneofNotSet;
     @property MyOneofCase myOneofCase() { return _myOneofCase; }
-    void clearMyOneof() { _myOneofCase = MyOneofCase.caseMyOneofNotSet; }
+    void clearMyOneof() { _myOneofCase = MyOneofCase.myOneofNotSet; }
     @Oneof("_myOneofCase") union
     {
         @Proto(1) string _a = defaultValue!string; mixin(oneofAccessors!_a);
@@ -208,21 +208,21 @@ unittest
     assert(d.b == defaultValue!(int));
     assert(d.c == defaultValue!(TestMessage2));
     assert(d.d == defaultValue!(TestEnum));
-    assert(d.myOneofCase == OneofMessage.MyOneofCase.caseMyOneofNotSet);
+    assert(d.myOneofCase == OneofMessage.MyOneofCase.myOneofNotSet);
 
     d.a = "foo";
     assert(d.a == "foo");
     assert(d.b == defaultValue!(int));
     assert(d.c == defaultValue!(TestMessage2));
     assert(d.d == defaultValue!(TestEnum));
-    assert(d.myOneofCase == OneofMessage.MyOneofCase.caseA);
+    assert(d.myOneofCase == OneofMessage.MyOneofCase.a);
 
     d.b = 42;
     assert(d.a == defaultValue!(string));
     assert(d.b == 42);
     assert(d.c == defaultValue!(TestMessage2));
     assert(d.d == defaultValue!(TestEnum));
-    assert(d.myOneofCase == OneofMessage.MyOneofCase.caseB);
+    assert(d.myOneofCase == OneofMessage.MyOneofCase.b);
 
     auto m = new TestMessage2;
     m.foo = 42;
@@ -231,12 +231,12 @@ unittest
     assert(d.b == defaultValue!(int));
     assert(d.c.foo == 42);
     assert(d.d == defaultValue!(TestEnum));
-    assert(d.myOneofCase == OneofMessage.MyOneofCase.caseC);
+    assert(d.myOneofCase == OneofMessage.MyOneofCase.c);
 
     d.d = TestEnum.B;
     assert(d.a == defaultValue!(string));
     assert(d.b == defaultValue!(int));
     assert(d.c == defaultValue!(TestMessage2));
     assert(d.d == TestEnum.B);
-    assert(d.myOneofCase == OneofMessage.MyOneofCase.caseD);
+    assert(d.myOneofCase == OneofMessage.MyOneofCase.d);
 }
