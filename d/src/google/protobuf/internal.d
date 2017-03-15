@@ -77,12 +77,13 @@ unittest
 }
 
 long fromVarint(R)(ref R inputRange)
-if (isInputRange!R && is(ElementType!R : ubyte))
+if (isInputRange!R)
 {
     import std.exception : enforce;
-
-    import std.range : front, popFront;
+    import std.range : empty, front, popFront;
     import std.traits : Unqual, Unsigned;
+
+    static assert(is(ElementType!R : ubyte));
 
     alias E = Unqual!(Unsigned!(ElementType!R));
 
@@ -170,6 +171,25 @@ auto encodeTag(Proto proto, T)()
     static assert(validateProto!(proto, T));
 
     return Varint(proto.tag << 3 | wireType!(proto, T));
+}
+
+auto decodeTag(R)(ref R inputRange)
+if (isInputRange!R)
+{
+    import std.algorithm : canFind;
+    import std.exception : enforce;
+    import std.traits : EnumMembers;
+    import std.typecons : tuple;
+
+    static assert(is(ElementType!R : ubyte));
+
+    long tagWire = fromVarint(inputRange);
+
+    WireType wireType = cast(WireType) (tagWire & 0x07);
+    enforce!ProtobufException([EnumMembers!WireType].canFind(wireType), "Unknown encoded wire type");
+    tagWire >>>= 3;
+    enforce!ProtobufException(tagWire > 0 && tagWire < (1<<29), "Tag value out of range");
+    return tuple!("tag", "wireType")(cast(uint) tagWire, wireType);
 }
 
 enum WireType : ubyte
@@ -294,4 +314,24 @@ if (isInputRange!R && hasLength!R)
         return range;
     else
         return new SizedRangeObject!R(range);
+}
+
+R takeLengthPrefixed(R)(ref R inputRange)
+{
+    import std.exception : enforce;
+
+    long size = fromVarint(inputRange);
+    enforce!ProtobufException(size >= 0, "Negative field length");
+    return inputRange.takeN(size);
+}
+
+R takeN(R)(ref R inputRange, size_t size)
+{
+    import std.exception : enforce;
+    import std.range : dropExactly, take;
+
+    R result = inputRange.take(size);
+    enforce!ProtobufException(result.length == size, "Truncated message");
+    inputRange = inputRange.dropExactly(size);
+    return result;
 }

@@ -9,7 +9,7 @@ import google.protobuf.internal;
 auto toProtobuf(T)(T value)
 if (isBoolean!T)
 {
-    return value ? [0x01] : [0x00];
+    return value ? [cast(ubyte) 0x01] : [cast(ubyte) 0x00];
 }
 
 unittest
@@ -119,12 +119,6 @@ unittest
     assert([false, false, true].toProtobuf.array == [0x03, 0x00, 0x00, 0x01]);
     assert([1, 2].toProtobuf!"fixed".array == [0x08, 0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00]);
     assert([1, 2].toProtobuf.array == [0x02, 0x01, 0x02]);
-}
-
-auto toProtobuf(T)(T value)
-if (isAssociativeArray!T)
-{
-    static assert(0, "The maps have no bulk encoding");
 }
 
 auto toProtobuf(T)(T value)
@@ -273,7 +267,7 @@ if (isBoolean!T ||
     is(T == bytes) ||
     (isArray!T && proto.packed))
 {
-    validateProto!(proto, T);
+    static assert(validateProto!(proto, T));
 
     return chain(encodeTag!(proto, T), value.toProtobuf);
 }
@@ -281,7 +275,7 @@ if (isBoolean!T ||
 private auto toProtobufByProto(Proto proto, T)(T value)
 if (isIntegral!T)
 {
-    validateProto!(proto, T);
+    static assert(validateProto!(proto, T));
 
     enum wire = proto.wire;
     return chain(encodeTag!(proto, T), value.toProtobuf!wire);
@@ -290,7 +284,7 @@ if (isIntegral!T)
 private auto toProtobufByProto(Proto proto, T)(T value)
 if (isArray!T && !proto.packed && !is(T == string) && !is(T == bytes) && !isAggregateType!(ElementType!T))
 {
-    validateProto!(proto, T);
+    static assert(validateProto!(proto, T));
 
     enum elementProto = Proto(proto.tag, proto.wire);
     return value.map!(a => a.toProtobufByProto!elementProto)
@@ -300,7 +294,7 @@ if (isArray!T && !proto.packed && !is(T == string) && !is(T == bytes) && !isAggr
 private SizedRange!ubyte toProtobufByProto(Proto proto, T)(T value)
 if (isArray!T && !proto.packed && !is(T == string) && !is(T == bytes) && isAggregateType!(ElementType!T))
 {
-    validateProto!(proto, T);
+    static assert(validateProto!(proto, T));
 
     enum elementProto = Proto(proto.tag, proto.wire);
     return value.map!(a => a.toProtobufByProto!elementProto)
@@ -313,7 +307,7 @@ if (isAssociativeArray!T && !isAggregateType!(ValueType!T))
 {
     import std.algorithm : findSplit;
 
-    validateProto!(proto, T);
+    static assert(validateProto!(proto, T));
 
     enum wires = proto.wire.findSplit(",");
     enum keyProto = Proto(1, wires[0]);
@@ -330,7 +324,7 @@ if (isAssociativeArray!T && isAggregateType!(ValueType!T))
 {
     import std.algorithm : findSplit;
 
-    validateProto!(proto, T);
+    static assert(validateProto!(proto, T));
 
     enum wires = proto.wire.findSplit(",");
     enum keyProto = Proto(1, wires[0]);
@@ -363,7 +357,7 @@ unittest
 private SizedRange!ubyte toProtobufByProto(Proto proto, T)(T value)
 if (isAggregateType!T)
 {
-    validateProto!(proto, T);
+    static assert(validateProto!(proto, T));
 
     auto result = toProtobuf!proto(value);
     return chain(encodeTag!(proto, T), Varint(result.length), result)

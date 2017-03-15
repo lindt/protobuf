@@ -159,7 +159,7 @@ bool validateProto(Proto proto, T)()
             || (!isArray!(ElementType!T) && !isAssociativeArray!(ElementType!T)));
         enum elementProto = Proto(proto.tag, proto.wire);
 
-        validateProto!(elementProto, ElementType!T);
+        static assert(validateProto!(elementProto, ElementType!T));
     }
     else static if (isAssociativeArray!T)
     {
@@ -173,10 +173,10 @@ bool validateProto(Proto proto, T)()
         enum wires = proto.wire.findSplit(",");
 
         enum keyProto = Proto(1, wires[0]);
-        validateProto!(keyProto, KeyType!T);
+        static assert(validateProto!(keyProto, KeyType!T));
 
         enum valueProto = Proto(2, wires[2]);
-        validateProto!(valueProto, ValueType!T);
+        static assert(validateProto!(valueProto, ValueType!T));
     }
     else static if (isAggregateType!T)
     {
