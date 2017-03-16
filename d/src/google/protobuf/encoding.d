@@ -198,19 +198,19 @@ private static auto toProtobufByField(alias field, T)(T message)
 
     static if (isOneof!field)
     {
-        auto oneofCase = __traits(getMember, message, oneofcaseFieldName!field);
-        enum fieldEnumValue = fieldName.skipOver('_');
-        enum fieldCase = typeof(oneofCase).stringof ~ "." ~ fieldEnumValue;
+        auto oneofCase = __traits(getMember, message, oneofCaseFieldName!field);
+        enum fieldCase = "T." ~ typeof(oneofCase).stringof ~ "." ~ oneofAccessorName!field;
+
         if (oneofCase != mixin(fieldCase))
-            return typeof(toProtobufByProto!proto(mixin(fieldInstanceName))).init;
+            return typeof(mixin(fieldInstanceName).toProtobufByProto!proto).init;
     }
     else
     {
         if (mixin(fieldInstanceName) == defaultValue!(typeof(field)))
-            return typeof(toProtobufByProto!proto(mixin(fieldInstanceName))).init;
+            return typeof(mixin(fieldInstanceName).toProtobufByProto!proto).init;
     }
 
-    return toProtobufByProto!proto(mixin(fieldInstanceName));
+    return mixin(fieldInstanceName).toProtobufByProto!proto;
 }
 
 unittest
@@ -359,7 +359,7 @@ if (isAggregateType!T)
 {
     static assert(validateProto!(proto, T));
 
-    auto result = toProtobuf!proto(value);
+    auto result = value.toProtobuf;
     return chain(encodeTag!(proto, T), Varint(result.length), result)
         .sizedRangeObject;
 }

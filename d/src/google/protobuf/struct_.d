@@ -13,17 +13,17 @@ class Value
 {
     enum KindCase
     {
-        caseKindNotSet = 0,
-        caseNullValue = 1,
-        caseNumberValue = 2,
-        caseStringValue = 3,
-        caseBoolValue = 4,
-        caseStructValue = 5,
-        caseListValue = 6,
+        kindNotSet = 0,
+        nullValue = 1,
+        numberValue = 2,
+        stringValue = 3,
+        boolValue = 4,
+        structValue = 5,
+        listValue = 6,
     }
-    KindCase _kindCase = KindCase.caseKindNotSet;
+    KindCase _kindCase = KindCase.kindNotSet;
     @property KindCase kindCase() { return _kindCase; }
-    void clearKind() { _kindCase = KindCase.caseKindNotSet; }
+    void clearKind() { _kindCase = KindCase.kindNotSet; }
     @Oneof("_kindCase") union
     {
         @Proto(1) NullValue _nullValue = defaultValue!(NullValue); mixin(oneofAccessors!_nullValue);

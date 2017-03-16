@@ -58,21 +58,36 @@ template oneofCaseFieldName(alias field)
     enum string oneofCaseFieldName = getUDAs!(field, Oneof)[0].caseFieldName;
 }
 
-template oneofAccessors(alias field)
+template oneofAccessorName(alias field)
 {
-    static string generateAccessors()
+    static string accessorName()
     {
         import std.algorithm : skipOver;
-        import std.string : format;
+
+        static assert(__traits(identifier, field)[0] == '_', "Invalid oneof union member name");
 
         string fieldName = __traits(identifier, field);
         bool result = fieldName.skipOver('_');
         assert(result);
+
+        return fieldName;
+    }
+
+    enum string oneofAccessorName = accessorName;
+}
+
+template oneofAccessors(alias field)
+{
+    static string generateAccessors()
+    {
+        import std.string : format;
+
+        enum accessorName = oneofAccessorName!field;
         
         return "
             %1$s %2$s() { return %3$s == typeof(%3$s).%2$s ? _%2$s : (%1$s).init; }
             void %2$s(%1$s _) { _%2$s = _; %3$s = typeof(%3$s).%2$s; }
-            ".format(typeof(field).stringof, fieldName, oneofCaseFieldName!field);
+            ".format(typeof(field).stringof, accessorName, oneofCaseFieldName!field);
     }
 
     enum oneofAccessors = generateAccessors;

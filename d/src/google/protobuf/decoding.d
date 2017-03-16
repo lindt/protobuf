@@ -152,71 +152,18 @@ if (isInputRange!R && isArray!T && !is(T == string) && !is(T == bytes))
     static if (wire.empty)
     {
         while (!fieldRange.empty)
-            result ~= fromProtobuf!(ElementType!T)(fieldRange);
+            result ~= fieldRange.fromProtobuf!(ElementType!T);
     }
     else
     {
         static assert(isIntegral!(ElementType!T), "Cannot specify wire format for non-integral arrays");
 
         while (!fieldRange.empty)
-            result ~= fromProtobuf!(wire, ElementType!T)(fieldRange);
+            result ~= fieldRange.fromProtobuf!(ElementType!T, wire);
     }
 
     return result.data;
 }
-
-/*
-T fromProtobuf(T, Proto proto = Proto(1), R)(ref R inputRange, T result = null)
-if (isInputRange!R && isAssociativeArray!T)
-{
-    import std.algorithm : findSplit;
-    import std.conv : to;
-
-    static assert(is(ElementType!R : ubyte));
-    static assert(validateProto!(proto, T));
-
-    enum wires = proto.wire.findSplit(",");
-    enum keyProto = Proto(1, wires[0]);
-    enum valueProto = Proto(2, wires[2]);
-    KeyType!T key;
-    ValueType!T value;
-    ubyte fromProtobufrState;
-    R fieldRange = inputRange.takeLengthPrefixed;
-
-    while (!fieldRange.empty)
-    {
-        uint tag;
-        WireType wire;
-
-        fromProtobufTag(fieldRange, tag, wire);
-
-        switch (tag)
-        {
-        case 1:
-            enforce!ProtobufException((fromProtobufrState & 0x01) == 0, "Double map key");
-            fromProtobufrState |= 0x01;
-            enum wireExpected = wireType!(keyProto, KeyType!T);
-            enforce!ProtobufException(wire == wireExpected, "Wrong wire format");
-            key = fieldRange.fromProtobuf!(KeyType!T, keyProto);
-            break;
-        case 2:
-            enforce!ProtobufException((fromProtobufrState & 0x02) == 0, "Double map value");
-            fromProtobufrState |= 0x02;
-            enum wireExpected = wireType!(valueProto, KeyType!T);
-            enforce!ProtobufException(wire == wireExpected, "Wrong wire format");
-            value = fieldRange.fromProtobuf!(ValueType!T, valueProto);
-            break;
-        default:
-            enforce!ProtobufException(false, "Unexpected field tag " ~ tag.to!string ~ " while decoding a map");
-            break;
-        }
-    }
-    enforce!ProtobufException((fromProtobufrState & 0x03) == 0x03, "Incomplete map element");
-    result[key] = value;
-
-    return result;
-}
-*/
 
 T fromProtobuf(T, R)(ref R inputRange, T result = T.init)
 if (isInputRange!R && isAggregateType!T)
@@ -288,6 +235,13 @@ if (isInputRange!R)
     static assert(validateProto!(proto, typeof(field)));
 
     fromProtobufByProto!proto(inputRange, mixin("message." ~ __traits(identifier, field)));
+    static if (isOneof!field)
+    {
+        enum oneofCase = "message." ~ oneofCaseFieldName!field;
+        enum fieldCase = "T." ~ typeof(mixin(oneofCase)).stringof ~ "." ~ oneofAccessorName!field;
+
+        mixin(oneofCase) = mixin(fieldCase);
+    }
 }
 
 private void fromProtobufByProto(Proto proto, T, R)(ref R inputRange, ref T field)
@@ -310,12 +264,99 @@ if (isInputRange!R && isIntegral!T)
 }
 
 private void fromProtobufByProto(Proto proto, T, R)(ref R inputRange, ref T field)
-if (isInputRange!R && isArray!T && proto.packed)
+if (isInputRange!R && isArray!T && !is(T == string) && !is(T == bytes) && proto.packed)
 {
     static assert(is(ElementType!R : ubyte));
     static assert(validateProto!(proto, T));
 
     field ~= inputRange.fromProtobuf!T;
+}
+
+private void fromProtobufByProto(Proto proto, T, R)(ref R inputRange, ref T field)
+if (isInputRange!R && isArray!T && !is(T == string) && !is(T == bytes) && !proto.packed)
+{
+    static assert(is(ElementType!R : ubyte));
+    static assert(validateProto!(proto, T));
+
+    field ~= inputRange.fromProtobuf!(ElementType!T);
+}
+
+private void fromProtobufByProto(Proto proto, T, R)(ref R inputRange, ref T field)
+if (isInputRange!R && isAssociativeArray!T)
+{
+    import std.algorithm : findSplit;
+    import std.conv : to;
+
+    static assert(is(ElementType!R : ubyte));
+    static assert(validateProto!(proto, T));
+
+    enum wires = proto.wire.findSplit(",");
+    enum keyProto = Proto(1, wires[0]);
+    enum valueProto = Proto(2, wires[2]);
+    KeyType!T key;
+    ValueType!T value;
+    ubyte decodingState;
+    R fieldRange = inputRange.takeLengthPrefixed;
+
+    while (!fieldRange.empty)
+    {
+        auto tagWire = fieldRange.decodeTag;
+
+        switch (tagWire.tag)
+        {
+        case 1:
+            enforce!ProtobufException((decodingState & 0x01) == 0, "Double map key");
+            decodingState |= 0x01;
+            enum wireTypeExpected = wireType!(keyProto, KeyType!T);
+            enforce!ProtobufException(tagWire.wireType == wireTypeExpected, "Wrong wire format");
+            static if (keyProto.wire.empty)
+            {
+                key = fieldRange.fromProtobuf!(KeyType!T);
+            }
+            else
+            {
+                static assert(isIntegral!(KeyType!T), "Cannot specify wire format for non-integral key");
+
+                enum wire = keyProto.wire;
+                key = fieldRange.fromProtobuf!(KeyType!T, wire);
+            }
+            break;
+        case 2:
+            enforce!ProtobufException((decodingState & 0x02) == 0, "Double map value");
+            decodingState |= 0x02;
+            enum wireTypeExpected = wireType!(valueProto, KeyType!T);
+            enforce!ProtobufException(tagWire.wireType == wireTypeExpected, "Wrong wire format");
+            static if (valueProto.wire.empty)
+            {
+                value = fieldRange.fromProtobuf!(ValueType!T);
+            }
+            else
+            {
+                static assert(isIntegral!(ValueType!T), "Cannot specify wire format for non-integral value");
+
+                enum wire = valueProto.wire;
+                value = fieldRange.fromProtobuf!(ValueType!T, wire);
+            }
+            break;
+        default:
+            enforce!ProtobufException(false,
+                "Unexpected field tag " ~ tagWire.tag.to!string ~ " while decoding a map");
+            break;
+        }
+    }
+    enforce!ProtobufException((decodingState & 0x03) == 0x03, "Incomplete map element");
+    field[key] = value;
+}
+
+private void fromProtobufByProto(Proto proto, T, R)(ref R inputRange, ref T field)
+if (isInputRange!R && isAggregateType!T)
+{
+    static assert(is(ElementType!R : ubyte));
+    static assert(validateProto!(proto, T));
+
+    R fieldRange = inputRange.takeLengthPrefixed;
+
+    field = fieldRange.fromProtobuf!T;
 }
 
 void skipUnknown(R)(ref R inputRange, WireType wireType)
