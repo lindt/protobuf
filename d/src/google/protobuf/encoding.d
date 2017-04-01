@@ -282,28 +282,27 @@ if (isIntegral!T)
 }
 
 private auto toProtobufByProto(Proto proto, T)(T value)
-if (isArray!T && !proto.packed && !is(T == string) && !is(T == bytes) && !isAggregateType!(ElementType!T))
+if (isArray!T && !proto.packed && !is(T == string) && !is(T == bytes))
 {
     static assert(validateProto!(proto, T));
 
     enum elementProto = Proto(proto.tag, proto.wire);
-    return value.map!(a => a.toProtobufByProto!elementProto)
+    auto result = value
+        .map!(a => a.toProtobufByProto!elementProto)
         .joiner;
-}
 
-private SizedRange!ubyte toProtobufByProto(Proto proto, T)(T value)
-if (isArray!T && !proto.packed && !is(T == string) && !is(T == bytes) && isAggregateType!(ElementType!T))
-{
-    static assert(validateProto!(proto, T));
-
-    enum elementProto = Proto(proto.tag, proto.wire);
-    return value.map!(a => a.toProtobufByProto!elementProto)
-        .joiner
-        .sizedRangeObject;
+    static if (isAggregateType!(ElementType!T))
+    {
+        return cast (SizedRange!ubyte) result.sizedRangeObject;
+    }
+    else
+    {
+        return result;
+    }
 }
 
 private auto toProtobufByProto(Proto proto, T)(T value)
-if (isAssociativeArray!T && !isAggregateType!(ValueType!T))
+if (isAssociativeArray!T)
 {
     import std.algorithm : findSplit;
 
@@ -313,28 +312,20 @@ if (isAssociativeArray!T && !isAggregateType!(ValueType!T))
     enum keyProto = Proto(1, wires[0]);
     enum valueProto = Proto(2, wires[2]);
 
-    return value.byKeyValue
+    auto result =value
+        .byKeyValue
         .map!(a => chain(a.key.toProtobufByProto!keyProto, a.value.toProtobufByProto!valueProto))
         .map!(a => chain(encodeTag!(proto, T), Varint(a.length), a))
         .joiner;
-}
 
-private SizedRange!ubyte toProtobufByProto(Proto proto, T)(T value)
-if (isAssociativeArray!T && isAggregateType!(ValueType!T))
-{
-    import std.algorithm : findSplit;
-
-    static assert(validateProto!(proto, T));
-
-    enum wires = proto.wire.findSplit(",");
-    enum keyProto = Proto(1, wires[0]);
-    enum valueProto = Proto(2, wires[2]);
-
-    return value.byKeyValue
-        .map!(a => chain(a.key.toProtobufByProto!keyProto, a.value.toProtobufByProto!valueProto))
-        .map!(a => chain(encodeTag!(proto, T), Varint(a.length), a))
-        .joiner
-        .sizedRangeObject;
+    static if (isAggregateType!(ValueType!T))
+    {
+        return cast(SizedRange!ubyte) result.sizedRangeObject;
+    }
+    else
+    {
+        return result;
+    }
 }
 
 unittest
