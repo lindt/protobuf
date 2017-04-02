@@ -278,7 +278,9 @@ if (isInputRange!R && isArray!T && !is(T == string) && !is(T == bytes) && !proto
     static assert(is(ElementType!R : ubyte));
     static assert(validateProto!(proto, T));
 
-    field ~= inputRange.fromProtobuf!(ElementType!T);
+    auto newElement = defaultValue!(ElementType!T);
+    inputRange.fromProtobufByProto!proto(newElement);
+    field ~= newElement;
 }
 
 private void fromProtobufByProto(Proto proto, T, R)(ref R inputRange, ref T field)

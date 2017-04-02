@@ -233,6 +233,102 @@ WireType wireType(Proto proto, T)()
     }
 }
 
+template CollectTypes(M, T...)
+{
+    import std.meta : AliasSeq, Filter, NoDuplicates, staticIndexOf, staticMap, Unqual;
+    import std.range : ElementType;
+    import std.traits : getSymbolsByUDA, hasMember, isAggregateType, isArray, isAssociativeArray, KeyType, ValueType;
+
+    static if (isAggregateType!M)
+    {
+        static template BaseTypeOf(alias S)
+        {
+            alias BaseTypeOf = BaseType!(typeof(S));
+        }
+
+        static template BaseType(T)
+        {
+            static if (isArray!T && !is(T == string) && !is(T == bytes))
+            {
+                alias BaseType = BaseType!(ElementType!T);
+            }
+            else static if (isAssociativeArray!T)
+            {
+                alias BaseType = AliasSeq!(BaseType!(KeyType!T), BaseType!(ValueType!T));
+            }
+            else
+            {
+                alias BaseType = Unqual!T;
+            }
+        }
+        alias Types = staticMap!(BaseTypeOf, getSymbolsByUDA!(M, Proto));
+
+        enum isNew(S) = staticIndexOf!(S, T) < 0;
+        alias NewTypes = Filter!(isNew, Types);
+
+        alias CollectMemberTypes(Member) = CollectTypes!(Member, NewTypes, T);
+        alias NewMembers = staticMap!(CollectMemberTypes, NewTypes);
+
+        static if (hasMember!(M, "toProtobuf"))
+        {
+            alias CollectTypes = AliasSeq!();
+        }
+        else
+        {
+            alias CollectTypes = NoDuplicates!(T, NewTypes, NewMembers);
+        }
+    }
+    else
+    {
+        alias CollectTypes = AliasSeq!();
+    }
+}
+
+template isRecursive(T)
+{
+    import std.meta : staticIndexOf;
+
+    enum isRecursive = staticIndexOf!(T, CollectTypes!T) >= 0;
+}
+
+version(unittest)
+{
+    class Foo
+    {
+        @Proto int i;
+        @Proto Bar[] f;
+    }
+
+    class Bar
+    {
+        @Proto string s;
+        @Proto Baz1[long] b;
+    }
+
+    class Baz1
+    {
+        @Proto string s;
+        @Proto Baz2 b;
+    }
+
+    class Baz2
+    {
+        @Proto string s;
+        @Proto Baz1 b;
+    }
+}
+
+unittest
+{
+    import std.meta : AliasSeq;
+
+    static assert(is(CollectTypes!Foo == AliasSeq!(int, Bar, string, long, Baz1, Baz2)));
+    static assert(!isRecursive!Foo);
+    static assert(!isRecursive!Bar);
+    static assert(isRecursive!Baz1);
+    static assert(isRecursive!Baz2);
+}
+
 auto joiner(RoR)(RoR ranges)
 if (isInputRange!RoR && isInputRange!(ElementType!RoR) && hasLength!(ElementType!RoR))
 {
@@ -314,6 +410,28 @@ if (isInputRange!R && hasLength!R)
         return range;
     else
         return new SizedRangeObject!R(range);
+}
+
+template isSizedRange(T)
+{
+    enum isSizedRange = isInputRange!T && is(typeof(T.init.length));
+}
+
+auto emptyRange(T)()
+{
+    static if (is(T == SizedRange!ubyte))
+    {
+        return sizedRangeObject(cast(ubyte[]) null);
+    }
+    else static if (is(T == struct))
+    {
+        static assert(isSizedRange!T);
+        return T.init;
+    }
+    else
+    {
+        static assert(0, "No empty range for " ~ T.stringof);
+    }
 }
 
 R takeLengthPrefixed(R)(ref R inputRange)

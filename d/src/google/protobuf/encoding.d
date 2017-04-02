@@ -139,14 +139,28 @@ if (isAggregateType!T)
             .map!(a => "value.toProtobufByField!(T." ~ a ~ ")")
             .stdJoiner(", ")
             .array;
+        enum resultExpression = "chain(" ~ fieldExpressions ~ ")";
 
-        static if (is(T == class))
+        static if (isRecursive!T)
         {
-            if (value is null)
-                return typeof(mixin("chain(" ~ fieldExpressions ~ ")")).init;
-        }
+            static if (is(T == class))
+            {
+                if (value is null)
+                    return cast(SizedRange!ubyte) sizedRangeObject(cast(ubyte[]) null);
+            }
 
-        return mixin("chain(" ~ fieldExpressions ~ ")");
+            return cast(SizedRange!ubyte) mixin(resultExpression).sizedRangeObject;
+        }
+        else
+        {
+            static if (is(T == class))
+            {
+                if (value is null)
+                    return typeof(mixin(resultExpression)).init;
+            }
+
+            return mixin(resultExpression);
+        }
     }
 }
 
@@ -154,15 +168,19 @@ unittest
 {
     import std.array : array;
 
-    struct Foo
+    class Foo
     {
         @Proto(1) int bar = defaultValue!int;
         @Proto(3) bool qux = defaultValue!bool;
         @Proto(2, "fixed") long baz = defaultValue!long;
         @Proto(4) string quux = defaultValue!string;
+
+        @Proto(5) Foo recursion = defaultValue!Foo;
     }
 
     Foo foo;
+    assert(foo.toProtobuf.empty);
+    foo = new Foo;
     assert(foo.toProtobuf.empty);
     foo.bar = 5;
     foo.baz = 1;
@@ -202,12 +220,12 @@ private static auto toProtobufByField(alias field, T)(T message)
         enum fieldCase = "T." ~ typeof(oneofCase).stringof ~ "." ~ oneofAccessorName!field;
 
         if (oneofCase != mixin(fieldCase))
-            return typeof(mixin(fieldInstanceName).toProtobufByProto!proto).init;
+            return emptyRange!(typeof(mixin(fieldInstanceName).toProtobufByProto!proto));
     }
     else
     {
         if (mixin(fieldInstanceName) == defaultValue!(typeof(field)))
-            return typeof(mixin(fieldInstanceName).toProtobufByProto!proto).init;
+            return emptyRange!(typeof(mixin(fieldInstanceName).toProtobufByProto!proto));
     }
 
     return mixin(fieldInstanceName).toProtobufByProto!proto;
@@ -287,18 +305,9 @@ if (isArray!T && !proto.packed && !is(T == string) && !is(T == bytes))
     static assert(validateProto!(proto, T));
 
     enum elementProto = Proto(proto.tag, proto.wire);
-    auto result = value
+    return value
         .map!(a => a.toProtobufByProto!elementProto)
         .joiner;
-
-    static if (isAggregateType!(ElementType!T))
-    {
-        return cast (SizedRange!ubyte) result.sizedRangeObject;
-    }
-    else
-    {
-        return result;
-    }
 }
 
 private auto toProtobufByProto(Proto proto, T)(T value)
@@ -312,20 +321,11 @@ if (isAssociativeArray!T)
     enum keyProto = Proto(1, wires[0]);
     enum valueProto = Proto(2, wires[2]);
 
-    auto result =value
+    return value
         .byKeyValue
         .map!(a => chain(a.key.toProtobufByProto!keyProto, a.value.toProtobufByProto!valueProto))
         .map!(a => chain(encodeTag!(proto, T), Varint(a.length), a))
         .joiner;
-
-    static if (isAggregateType!(ValueType!T))
-    {
-        return cast(SizedRange!ubyte) result.sizedRangeObject;
-    }
-    else
-    {
-        return result;
-    }
 }
 
 unittest
@@ -345,12 +345,20 @@ unittest
         [0x0a, 0x07, 0x08, 0x01, 0x15, 0x02, 0x00, 0x00, 0x00]);
 }
 
-private SizedRange!ubyte toProtobufByProto(Proto proto, T)(T value)
+private auto toProtobufByProto(Proto proto, T)(T value)
 if (isAggregateType!T)
 {
     static assert(validateProto!(proto, T));
 
-    auto result = value.toProtobuf;
-    return chain(encodeTag!(proto, T), Varint(result.length), result)
-        .sizedRangeObject;
+    auto encodedValue = value.toProtobuf;
+    auto result = chain(encodeTag!(proto, T), Varint(encodedValue.length), encodedValue);
+
+    static if (isRecursive!T)
+    {
+        return cast(SizedRange!ubyte) result.sizedRangeObject;
+    }
+    else
+    {
+        return result;
+    }
 }

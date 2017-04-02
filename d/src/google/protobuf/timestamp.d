@@ -83,7 +83,7 @@ unittest
     import std.array : array;
     import std.datetime : DateTime, msecs, seconds, UTC;
 
-    enum epoch = SysTime(DateTime(1970, 1, 1), UTC());
+    static const epoch = SysTime(DateTime(1970, 1, 1), UTC());
 
     assert(equal(Timestamp(epoch + 5.seconds + 5.msecs).toProtobuf, [
         0x08, 0x05, 0x10, 0xc0, 0x96, 0xb1, 0x02]));
@@ -115,7 +115,7 @@ unittest
     import std.exception : assertThrown;
     import std.json : JSONValue;
 
-    enum epoch = SysTime(DateTime(1970, 1, 1), UTC());
+    static const epoch = SysTime(DateTime(1970, 1, 1), UTC());
 
     assert(Timestamp(epoch).toJSONValue == JSONValue("1970-01-01T00:00:00Z"));
     assert(Timestamp(epoch + 5.seconds).toJSONValue == JSONValue("1970-01-01T00:00:05Z"));
@@ -123,11 +123,11 @@ unittest
     assert(Timestamp(epoch + 5.seconds + 300.nsecs).toJSONValue == JSONValue("1970-01-01T00:00:05.000000300Z"));
 
     immutable nonUTCTimeZone = new SimpleTimeZone(-3600.seconds);
-    enum nonUTCTimestamp = SysTime(DateTime(1970, 1, 1), nonUTCTimeZone);
+    static const nonUTCTimestamp = SysTime(DateTime(1970, 1, 1), nonUTCTimeZone);
     assert(Timestamp(nonUTCTimestamp).toJSONValue == JSONValue("1970-01-01T01:00:00Z"));
 
-    enum tooSmall = SysTime(DateTime(-1, 12, 31), UTC());
+    static const tooSmall = SysTime(DateTime(-1, 12, 31), UTC());
     assertThrown!ProtobufException(Timestamp(tooSmall).toJSONValue);
-    enum tooLarge = SysTime(DateTime(10_000, 1, 1), UTC());
+    static const tooLarge = SysTime(DateTime(10_000, 1, 1), UTC());
     assertThrown!ProtobufException(Timestamp(tooLarge).toJSONValue);
 }
