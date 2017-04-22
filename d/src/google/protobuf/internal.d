@@ -186,7 +186,7 @@ if (isInputRange!R)
     long tagWire = fromVarint(inputRange);
 
     WireType wireType = cast(WireType) (tagWire & 0x07);
-    enforce!ProtobufException([EnumMembers!WireType].canFind(wireType), "Unknown encoded wire type");
+    enforce!ProtobufException([EnumMembers!WireType].canFind(wireType), "Unknown encoded wire format");
     tagWire >>>= 3;
     enforce!ProtobufException(tagWire > 0 && tagWire < (1<<29), "Tag value out of range");
     return tuple!("tag", "wireType")(cast(uint) tagWire, wireType);

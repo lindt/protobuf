@@ -196,6 +196,10 @@ if (isInputRange!R && isAggregateType!T)
             {
                 case protoByField!(mixin("T." ~ fieldName)).tag:
                 {
+                    enum proto = protoByField!(mixin("T." ~ fieldName));
+                    enum wireTypeExpected = wireType!(proto, typeof(mixin("T." ~ fieldName)));
+
+                    enforce!ProtobufException(tagWire.wireType == wireTypeExpected, "Wrong wire format");
                     inputRange.fromProtobufByField!(mixin("T." ~ fieldName))(result);
                     break chooseFieldDecoder;
                 }
