@@ -261,13 +261,13 @@ template CollectTypes(M, T...)
                 alias BaseType = Unqual!T;
             }
         }
-        alias Types = staticMap!(BaseTypeOf, getSymbolsByUDA!(M, Proto));
+        alias Types = NoDuplicates!(staticMap!(BaseTypeOf, getSymbolsByUDA!(M, Proto)));
 
-        enum isNew(S) = staticIndexOf!(S, T) < 0;
-        alias NewTypes = Filter!(isNew, Types);
+        enum isNewType(S) = staticIndexOf!(S, T) < 0;
+        alias NewTypes = Filter!(isNewType, Types);
 
         alias CollectMemberTypes(Member) = CollectTypes!(Member, NewTypes, T);
-        alias NewMembers = staticMap!(CollectMemberTypes, NewTypes);
+        alias NewMemberTypes = NoDuplicates!(staticMap!(CollectMemberTypes, NewTypes));
 
         static if (hasMember!(M, "toProtobuf"))
         {
@@ -275,7 +275,7 @@ template CollectTypes(M, T...)
         }
         else
         {
-            alias CollectTypes = NoDuplicates!(T, NewTypes, NewMembers);
+            alias CollectTypes = NoDuplicates!(T, NewTypes, NewMemberTypes);
         }
     }
     else
