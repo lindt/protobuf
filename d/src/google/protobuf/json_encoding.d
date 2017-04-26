@@ -2,7 +2,6 @@ module google.protobuf.json_encoding;
 
 import std.json : JSONValue;
 import std.traits : isAggregateType, isArray, isAssociativeArray, isBoolean, isFloatingPoint, isIntegral, isSigned;
-import std.typecons : Flag, No, Yes;
 import google.protobuf.common;
 
 JSONValue toJSONValue(T)(T value)
@@ -79,7 +78,7 @@ unittest
     assert([1 : false, 2 : true].toJSONValue == parseJSON(`{"1": false, "2": true}`));
 }
 
-JSONValue toJSONValue(Flag!"omitDefaultValues" omitDefaultValues = Yes.omitDefaultValues, T)(T value)
+JSONValue toJSONValue(T)(T value)
 if (isAggregateType!T)
 {
     import std.meta : AliasSeq;
@@ -93,34 +92,20 @@ if (isAggregateType!T)
     {
         JSONValue[string] members;
 
-        foreach (field; Message!T.fieldNames)
+        foreach (fieldName; Message!T.fieldNames)
         {
-            auto fieldValue = mixin("value." ~ field);
-            alias FieldType = typeof(fieldValue);
-
-            static if (isAggregateType!FieldType)
+            static if (isOneof!(mixin("T." ~ fieldName)))
             {
-                static if (omitDefaultValues)
-                {
-                    if (fieldValue != defaultValue!FieldType)
-                        members[field] = toJSONValue!omitDefaultValues(fieldValue);
-                }
-                else
-                {
-                    members[field] = toJSONValue!omitDefaultValues(fieldValue);
-                }
+                auto oneofCase = __traits(getMember, value, oneofCaseFieldName!(mixin("T." ~ fieldName)));
+                enum fieldCase = "T." ~ typeof(oneofCase).stringof ~ "." ~ oneofAccessorName!(mixin("T." ~ fieldName));
+
+                if (oneofCase == mixin(fieldCase))
+                    members[oneofAccessorName!(mixin("T." ~ fieldName))] = mixin("value." ~ fieldName).toJSONValue;
             }
             else
             {
-                static if (omitDefaultValues)
-                {
-                    if (fieldValue != defaultValue!FieldType)
-                        members[field] = fieldValue.toJSONValue;
-                }
-                else
-                {
-                    members[field] = fieldValue.toJSONValue;
-                }
+                if (mixin("value." ~ fieldName) != defaultValue!(typeof((mixin("T." ~ fieldName)))))
+                    members[fieldName] = mixin("value." ~ fieldName).toJSONValue;
             }
         }
 
@@ -142,5 +127,48 @@ unittest
     auto foo = Foo(10, "abc", false);
 
     assert(foo.toJSONValue == parseJSON(`{"a":10, "b":"abc"}`));
-    assert(foo.toJSONValue!(No.omitDefaultValues) == parseJSON(`{"a": 10, "b": "abc", "c": false}`));
+}
+
+unittest
+{
+    import std.json : parseJSON;
+
+    struct Foo
+    {
+        @Proto(1) int a;
+
+        enum MeterOrInchCase
+        {
+            meterOrInchNotSet = 0,
+            meter = 3,
+            inch = 5,
+        }
+        MeterOrInchCase _meterOrInchCase = MeterOrInchCase.meterOrInchNotSet;
+        @property MeterOrInchCase meterOrInchCase() { return _meterOrInchCase; }
+        void clearMeterOrInchCase() { _meterOrInchCase = MeterOrInchCase.meterOrInchNotSet; }
+        @Oneof("_meterOrInchCase") union
+        {
+            @Proto(3) int _meter = defaultValue!(int); mixin(oneofAccessors!_meter);
+            @Proto(5) int _inch; mixin(oneofAccessors!_inch);
+        }
+    }
+
+    auto foo = Foo(10);
+
+    assert(foo.toJSONValue == parseJSON(`{"a":10}`));
+
+    foo.meter = 10;
+    assert(foo.toJSONValue == parseJSON(`{"a":10, "meter":10}`));
+
+    foo.inch = 20;
+    assert(foo.toJSONValue == parseJSON(`{"a":10, "inch":20}`));
+
+    foo.meter = 0;
+    assert(foo.toJSONValue == parseJSON(`{"a":10, "meter":0}`));
+
+    foo.a = 0;
+    assert(foo.toJSONValue == parseJSON(`{"meter":0}`));
+
+    foo.clearMeterOrInchCase;
+    assert(foo.toJSONValue == parseJSON(`{}`));
 }
