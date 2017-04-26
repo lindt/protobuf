@@ -1,4 +1,5 @@
 import std.array;
+import std.base64;
 import std.exception;
 import std.json;
 import std.stdio;
@@ -30,6 +31,11 @@ void doTest(ConformanceRequest request, ConformanceResponse response)
         {
             auto payload = request.jsonPayload.save;
             testMessage = parseJSON(payload).fromJSONValue!TestAllTypes;
+        }
+        catch (Base64Exception decodeException)
+        {
+            response.parseError = decodeException.msg;
+            return;
         }
         catch (JSONException decodeException)
         {
