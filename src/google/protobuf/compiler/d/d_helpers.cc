@@ -105,7 +105,7 @@ string UnderscoresToCamelCase(const string& input, bool cap_next_letter) {
       cap_next_letter = false;
     } else if ('0' <= input[i] && input[i] <= '9') {
       result += input[i];
-      cap_next_letter = true;
+      cap_next_letter = false;
     } else {
       cap_next_letter = true;
     }

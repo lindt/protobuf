@@ -1,0 +1,2 @@
+Required.JsonInput.OriginalProtoFieldName.JsonOutput
+Required.JsonInput.OriginalProtoFieldName.ProtobufOutput

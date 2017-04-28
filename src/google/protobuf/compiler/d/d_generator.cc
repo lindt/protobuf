@@ -90,7 +90,7 @@ void GenerateOneofField(const FieldDescriptor* field, io::Printer* printer,
   }
   printer->Print(
     ") $type$ _$name$",
-    "name", EscapeKeywords(field->camelcase_name()),
+    "name", UnderscoresToCamelCase(field->name(), false),
     "type", TypeName(field));
   if (print_initializer) {
     printer->Print(
@@ -99,7 +99,7 @@ void GenerateOneofField(const FieldDescriptor* field, io::Printer* printer,
   }
   printer->Print(
     "; mixin(oneofAccessors!_$name$);\n",
-    "name", EscapeKeywords(field->camelcase_name()));
+    "name", UnderscoresToCamelCase(field->name(), false));
 }
 
 void GenerateOneofUnion(const OneofDescriptor* oneof, io::Printer* printer) {
@@ -136,7 +136,7 @@ void GenerateField(const FieldDescriptor* field, io::Printer* printer,
   }
   printer->Print(
     ") $type$ $name$",
-    "name", EscapeKeywords(field->camelcase_name()),
+    "name", UnderscoresToCamelCase(field->name(), false),
     "type", TypeName(field));
   if (print_initializer) {
     printer->Print(
