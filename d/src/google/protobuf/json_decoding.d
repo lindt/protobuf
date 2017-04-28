@@ -150,8 +150,6 @@ if (isAggregateType!T)
 {
     import std.traits : hasMember;
 
-    enforce!ProtobufException(value.type == JSON_TYPE.OBJECT, "Object JSONValue expected");
-
     static if (is(T == class))
     {
         if (result is null)
@@ -164,6 +162,8 @@ if (isAggregateType!T)
     }
     else
     {
+        enforce!ProtobufException(value.type == JSON_TYPE.OBJECT, "Object JSONValue expected");
+
         JSONValue[string] members = value.object;
 
         foreach (field; Message!T.fieldNames)

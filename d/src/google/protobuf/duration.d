@@ -83,7 +83,11 @@ struct Duration
             auto secondsValue = split[0].to!long;
             auto nsecsValue = split[2].empty ? 0 : (split[2] ~ "00000000")[0 .. 9].to!int;
 
+            if (secondsValue < 0)
+                nsecsValue = -nsecsValue;
             duration = dur!"seconds"(secondsValue) + dur!"nsecs"(nsecsValue);
+
+            validateRange;
             return this;
         }
         catch (ConvException exception)
