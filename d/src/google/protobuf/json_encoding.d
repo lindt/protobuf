@@ -104,7 +104,7 @@ if (isAggregateType!T)
             }
             else
             {
-                if (mixin("value." ~ fieldName) != defaultValue!(typeof((mixin("T." ~ fieldName)))))
+                if (mixin("value." ~ fieldName) != defaultValue!(typeof(mixin("T." ~ fieldName))))
                     members[fieldName] = mixin("value." ~ fieldName).toJSONValue;
             }
         }

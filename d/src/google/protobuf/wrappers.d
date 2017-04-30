@@ -1,6 +1,7 @@
 module google.protobuf.wrappers;
 
 import std.json : JSONValue;
+import std.typecons : Nullable;
 import google.protobuf;
 
 struct WrappedValue(T)
@@ -10,9 +11,14 @@ struct WrappedValue(T)
         @Proto(1) T value = defaultValue!(T);
     }
 
-    T value = defaultValue!(T);
+    Nullable!T value;
 
     alias value this;
+
+    inout this(inout T value)
+    {
+        this.value = value;
+    }
 
     auto toProtobuf()
     {
@@ -29,14 +35,17 @@ struct WrappedValue(T)
     {
         import google.protobuf.json_encoding;
 
-        return value.toJSONValue;
+        return value.isNull ? JSONValue(null) : value.get.toJSONValue;
     }
 
     auto fromJSONValue(JSONValue jsonValue)
     {
         import google.protobuf.json_encoding;
 
-        value = jsonValue.fromJSONValue!T;
+        if (jsonValue.isNull)
+            value.nullify;
+        else
+            value = jsonValue.fromJSONValue!T;
         return this;
     }
 }
@@ -64,5 +73,8 @@ unittest
     assert(buffer.empty);
     foreach (WrappedValue; AliasSeq!(DoubleValue, FloatValue, Int64Value, UInt64Value, Int32Value, UInt32Value,
             BoolValue, StringValue, BytesValue))
-        assert(buffer.fromProtobuf!WrappedValue == defaultValue!(typeof(WrappedValue.value)));
+    {
+        static assert(defaultValue!WrappedValue.isNull);
+        assert(buffer.fromProtobuf!WrappedValue == defaultValue!(typeof(WrappedValue.value.get)));
+    }
 }

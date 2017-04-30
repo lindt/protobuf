@@ -11,38 +11,54 @@ if (isBoolean!T)
 {
     switch (value.type)
     {
-    case JSON_TYPE.FALSE:
-        return false;
+    case JSON_TYPE.NULL:
+        return defaultValue!T;
     case JSON_TYPE.TRUE:
         return true;
+    case JSON_TYPE.FALSE:
+        return false;
     default:
-        throw new ProtobufException("Boolean JSONValue expected");
+        throw new ProtobufException("JSON boolean expected");
     }
 }
 
 T fromJSONValue(T)(JSONValue value)
-if (isIntegral!T && isSigned!T)
+if (isIntegral!T)
 {
-    enforce!ProtobufException(value.type == JSON_TYPE.INTEGER, "Integer JSONValue expected");
-    return cast(T) value.integer;
-}
+    import std.conv : ConvException, to;
 
-T fromJSONValue(T)(JSONValue value)
-if (isIntegral!T && !isSigned!T)
-{
-    enforce!ProtobufException(value.type == JSON_TYPE.UINTEGER, "Unsigned integer JSONValue expected");
-    return cast(T) value.uinteger;
+    switch (value.type)
+    {
+    case JSON_TYPE.NULL:
+        return defaultValue!T;
+    case JSON_TYPE.STRING:
+        try
+        {
+            return value.str.to!T;
+        }
+        catch (ConvException ConvException)
+        {
+            throw new ProtobufException("JSON integer expected");
+        }
+    case JSON_TYPE.INTEGER:
+        return cast(T) value.integer;
+    case JSON_TYPE.UINTEGER:
+        return cast(T) value.uinteger;
+    default:
+        throw new ProtobufException("JSON integer expected");
+    }
 }
 
 T fromJSONValue(T)(JSONValue value)
 if (isFloatingPoint!T)
 {
+    import std.conv : ConvException, to;
     import std.math : isInfinity, isNaN;
 
     switch (value.type)
     {
-    case JSON_TYPE.FLOAT:
-        return value.floating;
+    case JSON_TYPE.NULL:
+        return defaultValue!T;
     case JSON_TYPE.STRING:
         switch (value.str)
         {
@@ -53,17 +69,33 @@ if (isFloatingPoint!T)
         case "-Infinity":
             return -T.infinity;
         default:
-            throw new ProtobufException("Wrong float literal");
+            try
+            {
+                return value.str.to!T;
+            }
+            catch (ConvException ConvException)
+            {
+                throw new ProtobufException("JSON float expected");
+            }
         }
+    case JSON_TYPE.INTEGER:
+        return cast(T) value.integer;
+    case JSON_TYPE.UINTEGER:
+        return cast(T) value.uinteger;
+    case JSON_TYPE.FLOAT:
+        return value.floating;
     default:
-        throw new ProtobufException("Floating point JSONValue expected");
+        throw new ProtobufException("JSON float expected");
     }
 }
 
 T fromJSONValue(T)(JSONValue value)
 if (is(T == string))
 {
-    enforce!ProtobufException(value.type == JSON_TYPE.STRING, "String JSONValue expected");
+    if (value.isNull)
+        return defaultValue!T;
+
+    enforce!ProtobufException(value.type == JSON_TYPE.STRING, "JSON string expected");
     return value.str;
 }
 
@@ -72,7 +104,10 @@ if (is(T == bytes))
 {
     import std.base64 : Base64;
 
-    enforce!ProtobufException(value.type == JSON_TYPE.STRING, "String JSONValue expected");
+    if (value.isNull)
+        return defaultValue!T;
+
+    enforce!ProtobufException(value.type == JSON_TYPE.STRING, "JSON base64 encoded binary expected");
     return Base64.decode(value.str);
 }
 
@@ -83,7 +118,10 @@ if (isArray!T && !is(T == string) && !is(T == bytes))
     import std.array : array;
     import std.range : ElementType;
 
-    enforce!ProtobufException(value.type == JSON_TYPE.ARRAY, "Array JSONValue expected");
+    if (value.isNull)
+        return defaultValue!T;
+
+    enforce!ProtobufException(value.type == JSON_TYPE.ARRAY, "JSON array expected");
     return value.array.map!(a => a.fromJSONValue!(ElementType!T)).array;
 }
 
@@ -93,7 +131,10 @@ if (isAssociativeArray!T)
     import std.conv : ConvException, to;
     import std.traits : KeyType, ValueType;
 
-    enforce!ProtobufException(value.type == JSON_TYPE.OBJECT, "Object JSONValue expected");
+    if (value.isNull)
+        return defaultValue!T;
+
+    enforce!ProtobufException(value.type == JSON_TYPE.OBJECT, "JSON object expected");
     foreach (k, v; value.object)
     {
         try
@@ -150,6 +191,9 @@ if (isAggregateType!T)
 {
     import std.traits : hasMember;
 
+    if (value.isNull)
+        return defaultValue!T;
+
     static if (is(T == class))
     {
         if (result is null)
@@ -162,7 +206,7 @@ if (isAggregateType!T)
     }
     else
     {
-        enforce!ProtobufException(value.type == JSON_TYPE.OBJECT, "Object JSONValue expected");
+        enforce!ProtobufException(value.type == JSON_TYPE.OBJECT, "JSON object expected");
 
         JSONValue[string] members = value.object;
 
