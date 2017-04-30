@@ -191,9 +191,6 @@ if (isAggregateType!T)
 {
     import std.traits : hasMember;
 
-    if (value.isNull)
-        return defaultValue!T;
-
     static if (is(T == class))
     {
         if (result is null)
@@ -206,6 +203,9 @@ if (isAggregateType!T)
     }
     else
     {
+        if (value.isNull)
+            return defaultValue!T;
+
         enforce!ProtobufException(value.type == JSON_TYPE.OBJECT, "JSON object expected");
 
         JSONValue[string] members = value.object;
