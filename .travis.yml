@@ -33,6 +33,7 @@ env:
   - CONFIG=jruby
   - CONFIG=php5.6_mac
   - CONFIG=php7.0_mac
+  - CONFIG=d
 matrix:
   exclude:
     # It's nontrivial to programmatically install a new JDK from the command
